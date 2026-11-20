@@ -20,11 +20,7 @@ window.ZLog = window.ZLog || {};
   const defaultStatus = {
     reading:      'The Creative Act — Rick Rubin',
     onRepeat:     'Where’s My Love — SYML',
-    crafting:     'Chunky knit pouch with sage yarn',
-    daydreaming:  'Quiet greenhouse afternoons & sunlit ceramic cups',
-    dailyTally:   '3 cups of genmaicha · 1 completed puzzle · 4,200 steps',
-    lastfmUser:   '',
-    lastfmApiKey: ''
+    daydreaming:  'Quiet greenhouse afternoons & sunlit ceramic cups'
   };
 
   /* ── Quick Tag definitions (Feed Filter Bar & Editor) ── */
@@ -163,16 +159,13 @@ window.ZLog = window.ZLog || {};
       if (raw) {
         const parsed = JSON.parse(raw);
         let changed = false;
-        if ('location' in parsed) {
-          delete parsed.location;
-          changed = true;
-        }
+        if ('location' in parsed) { delete parsed.location; changed = true; }
+        if ('crafting' in parsed) { delete parsed.crafting; changed = true; }
+        if ('dailyTally' in parsed) { delete parsed.dailyTally; changed = true; }
+        if ('lastfmUser' in parsed) { delete parsed.lastfmUser; changed = true; }
+        if ('lastfmApiKey' in parsed) { delete parsed.lastfmApiKey; changed = true; }
         if (!parsed.daydreaming) {
           parsed.daydreaming = defaultStatus.daydreaming;
-          changed = true;
-        }
-        if (!parsed.dailyTally) {
-          parsed.dailyTally = defaultStatus.dailyTally;
           changed = true;
         }
         if (!parsed.onRepeat || parsed.onRepeat === 'Rainy Window Lo-Fi') {
@@ -392,16 +385,9 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
         const merged = {
           reading:     data.reading || currentLocal.reading || defaultStatus.reading,
           onRepeat:    data.on_repeat || data.onRepeat || currentLocal.onRepeat || defaultStatus.onRepeat,
-          crafting:    data.crafting || currentLocal.crafting || defaultStatus.crafting,
-          daydreaming: data.daydreaming || currentLocal.daydreaming || defaultStatus.daydreaming,
-          dailyTally:  data.daily_tally || data.dailyTally || currentLocal.dailyTally || defaultStatus.dailyTally,
-          lastfmUser:  data.lastfm_user || data.lastfmUser || currentLocal.lastfmUser || '',
-          lastfmApiKey:data.lastfm_key || data.lastfmApiKey || currentLocal.lastfmApiKey || ''
+          daydreaming: data.daydreaming || currentLocal.daydreaming || defaultStatus.daydreaming
         };
         saveStatus(merged);
-        if (merged.lastfmUser || merged.lastfmApiKey) {
-          saveLastFm({ username: merged.lastfmUser, apiKey: merged.lastfmApiKey });
-        }
         return merged;
       }
     } catch (err) {
@@ -420,17 +406,11 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
         id: 1,
         reading:     newStatus.reading || '',
         on_repeat:   newStatus.onRepeat || '',
-        crafting:    newStatus.crafting || '',
-        daydreaming: newStatus.daydreaming || '',
-        daily_tally: newStatus.dailyTally || '',
-        lastfm_user: newStatus.lastfmUser || '',
-        lastfm_key:  newStatus.lastfmApiKey || ''
+        daydreaming: newStatus.daydreaming || ''
       };
       const { error } = await sb.from('site_status').upsert(row);
       if (error) {
-        if (error.message && (error.message.includes('daily_tally') || error.message.includes('daydreaming'))) {
-          // If columns do not exist in table, upsert without them
-          delete row.daily_tally;
+        if (error.message && error.message.includes('daydreaming')) {
           delete row.daydreaming;
           await sb.from('site_status').upsert(row);
         } else {

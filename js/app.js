@@ -34,8 +34,6 @@ window.ZLog = window.ZLog || {};
   let currentTrack = null;   // { title, artist, note, url, parsed }
   let readerOpen = false;
   let editorOpen = false;
-  let latestLiveTrack = null; // { title, artist, nowPlaying, url }
-  let lastfmTimer = null;
 
   /* ── DOM Cache ── */
   const $ = (s) => document.querySelector(s);
@@ -102,10 +100,6 @@ window.ZLog = window.ZLog || {};
     dom.themeIcon       = $('#theme-icon');
     dom.statusModal     = $('#status-modal');
     dom.editStatusBtn   = $('#edit-status-btn');
-    dom.smLastfmUser    = $('#sm-lastfm-user');
-    dom.smLastfmKey     = $('#sm-lastfm-key');
-    dom.smLastfmTest    = $('#sm-lastfm-test');
-    dom.smLastfmStatus  = $('#sm-lastfm-status');
     dom.miniPlayer      = $('#mini-player');
     dom.miniVinyl       = $('#mini-vinyl');
     dom.miniTitle       = $('#mini-title');
@@ -130,7 +124,6 @@ window.ZLog = window.ZLog || {};
     dom.importInput     = $('#import-input');
     dom.progressBar     = $('#reading-progress');
     dom.authorSignoutBtn = $('#author-signout-btn');
-    dom.smTally         = $('#sm-tally');
     dom.runningDate     = $('#diary-running-date');
   }
 
@@ -402,7 +395,6 @@ window.ZLog = window.ZLog || {};
   async function syncLiveStatus() {
     await Data.fetchLiveStatus();
     renderCurrently();
-    fetchLastFmNowPlaying();
   }
 
   /* ═══════════════════════════════════════
@@ -663,76 +655,13 @@ window.ZLog = window.ZLog || {};
   }
 
   /* ═══════════════════════════════════════
-     CURRENTLY WIDGET & LIVE MUSIC (LAST.FM)
+     CURRENTLY WIDGET
      ═══════════════════════════════════════ */
-
-  function extractLastFmTrack(data) {
-    if (!data || !data.recenttracks || !data.recenttracks.track) return null;
-    const rawTracks = data.recenttracks.track;
-    const t = Array.isArray(rawTracks) ? rawTracks[0] : rawTracks;
-    if (!t) return null;
-
-    const artistName = (t.artist && (t.artist['#text'] || t.artist.name)) ||
-                       (typeof t.artist === 'string' ? t.artist : 'Unknown Artist');
-    const trackName = t.name || 'Unknown Track';
-    const isNowPlaying = Boolean(t['@attr'] && String(t['@attr'].nowplaying).toLowerCase() === 'true');
-    const trackUrl = t.url || null;
-
-    return {
-      title: trackName,
-      artist: artistName,
-      nowPlaying: isNowPlaying,
-      url: trackUrl
-    };
-  }
-
-  async function fetchLastFmNowPlaying() {
-    const cfg = Data.loadLastFm();
-    if (!cfg || !cfg.username || !cfg.apiKey) {
-      latestLiveTrack = null;
-      renderCurrently();
-      return null;
-    }
-
-    try {
-      const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(cfg.username)}&api_key=${encodeURIComponent(cfg.apiKey)}&format=json&limit=1`;
-      const res = await fetch(url, { cache: 'no-cache' });
-      if (!res.ok) {
-        console.warn('Last.fm HTTP status:', res.status);
-        latestLiveTrack = null;
-        renderCurrently();
-        return null;
-      }
-      const data = await res.json();
-      if (data.error) {
-        console.warn('Last.fm API error:', data.message);
-        latestLiveTrack = null;
-        renderCurrently();
-        return null;
-      }
-
-      const track = extractLastFmTrack(data);
-      latestLiveTrack = track;
-      renderCurrently();
-      return track;
-    } catch (err) {
-      console.warn('Last.fm fetch error (network or offline):', err);
-      latestLiveTrack = null;
-      renderCurrently();
-      return null;
-    }
-  }
-
-  function setupLastFmPolling() {
-    if (lastfmTimer) clearInterval(lastfmTimer);
-    fetchLastFmNowPlaying();
-    lastfmTimer = setInterval(fetchLastFmNowPlaying, 30000);
-  }
 
   function renderCurrently() {
     const status = Data.loadStatus();
 
-    // Determine On Repeat / Now Playing / Last Played state
+    // Determine On Repeat state
     let musicTagText = 'ON REPEAT';
     let musicTitle = 'Where’s My Love';
     let musicArtist = 'SYML';
@@ -740,44 +669,31 @@ window.ZLog = window.ZLog || {};
     let musicUrl = null;
     let isExternalUrl = false;
 
-    if (latestLiveTrack) {
-      musicTitle = latestLiveTrack.title;
-      musicArtist = latestLiveTrack.artist;
-      musicDisplay = `${latestLiveTrack.title} — ${latestLiveTrack.artist}`;
-      musicUrl = latestLiveTrack.url || null;
+    // Manual entry from status
+    const rawRepeat = status.onRepeat || 'Where’s My Love — SYML';
+    musicDisplay = rawRepeat;
 
-      if (latestLiveTrack.nowPlaying) {
-        musicTagText = 'NOW PLAYING';
+    // Check if rawRepeat is a URL (e.g. YouTube Music URL)
+    if (/^https?:\/\//i.test(rawRepeat.trim())) {
+      isExternalUrl = true;
+      musicUrl = rawRepeat.trim();
+      if (rawRepeat.includes('music.youtube.com') || rawRepeat.includes('youtube.com')) {
+        musicDisplay = 'YouTube Music Track';
       } else {
-        musicTagText = 'LAST PLAYED';
-      }
-    } else {
-      // Fallback to manual entry from status
-      const rawRepeat = status.onRepeat || 'Where’s My Love — SYML';
-      musicDisplay = rawRepeat;
-
-      // Check if rawRepeat is a URL (e.g. YouTube Music URL)
-      if (/^https?:\/\//i.test(rawRepeat.trim())) {
-        isExternalUrl = true;
-        musicUrl = rawRepeat.trim();
-        if (rawRepeat.includes('music.youtube.com') || rawRepeat.includes('youtube.com')) {
-          musicDisplay = 'YouTube Music Track';
-        } else {
-          try {
-            const parsedUrl = new URL(rawRepeat);
-            musicDisplay = parsedUrl.hostname;
-          } catch (e) {
-            musicDisplay = 'External Audio Link';
-          }
+        try {
+          const parsedUrl = new URL(rawRepeat);
+          musicDisplay = parsedUrl.hostname;
+        } catch (e) {
+          musicDisplay = 'External Audio Link';
         }
-      } else if (rawRepeat.includes('—') || rawRepeat.includes('-')) {
-        const parts = rawRepeat.split(/—|-/).map(s => s.trim());
-        musicTitle = parts[0] || rawRepeat;
-        musicArtist = parts[1] || 'Unknown';
-      } else {
-        musicTitle = rawRepeat;
-        musicArtist = 'Zee’s Playlist';
       }
+    } else if (rawRepeat.includes('—') || rawRepeat.includes('-')) {
+      const parts = rawRepeat.split(/—|-/).map(s => s.trim());
+      musicTitle = parts[0] || rawRepeat;
+      musicArtist = parts[1] || 'Unknown';
+    } else {
+      musicTitle = rawRepeat;
+      musicArtist = 'Zee’s Playlist';
     }
 
     const linkIconHtml = musicUrl
@@ -810,16 +726,8 @@ window.ZLog = window.ZLog || {};
           </div>
         </div>
         <div class="currently-row">
-          <span class="currently-tag">CRAFTING</span>
-          <span class="currently-text">${escapeHtml(status.crafting || 'Chunky knit pouch with sage yarn')}</span>
-        </div>
-        <div class="currently-row">
           <span class="currently-tag">DAYDREAMING OF</span>
           <span class="currently-text">${escapeHtml(status.daydreaming || 'Quiet greenhouse afternoons & sunlit ceramic cups')}</span>
-        </div>
-        <div class="currently-row">
-          <span class="currently-tag">DAILY TALLY</span>
-          <span class="currently-text">${escapeHtml(status.dailyTally || '3 cups of genmaicha · 1 completed puzzle · 4,200 steps')}</span>
         </div>
       `;
     }
@@ -831,20 +739,9 @@ window.ZLog = window.ZLog || {};
 
   function openStatusModal() {
     const status = Data.loadStatus();
-    $('#sm-reading').value     = status.reading || '';
-    $('#sm-repeat').value      = status.onRepeat || '';
-    $('#sm-crafting').value    = status.crafting || '';
-    $('#sm-daydreaming').value = status.daydreaming || '';
-    if ($('#sm-tally')) $('#sm-tally').value = status.dailyTally || '';
-
-    const lfm = Data.loadLastFm();
-    if ($('#sm-lastfm-user')) $('#sm-lastfm-user').value = lfm.username || '';
-    if ($('#sm-lastfm-key'))  $('#sm-lastfm-key').value  = lfm.apiKey || '';
-    if ($('#sm-lastfm-status')) {
-      $('#sm-lastfm-status').className = 'lastfm-status-msg';
-      $('#sm-lastfm-status').textContent = '';
-    }
-
+    if ($('#sm-reading')) $('#sm-reading').value         = status.reading || '';
+    if ($('#sm-repeat')) $('#sm-repeat').value          = status.onRepeat || '';
+    if ($('#sm-daydreaming')) $('#sm-daydreaming').value = status.daydreaming || '';
     dom.statusModal.classList.add('open');
   }
 
@@ -853,100 +750,24 @@ window.ZLog = window.ZLog || {};
   }
 
   async function saveStatus() {
-    const reading = $('#sm-reading').value.trim();
-    const onRepeat = $('#sm-repeat').value.trim();
-    const crafting = $('#sm-crafting').value.trim();
-    const daydreaming = $('#sm-daydreaming').value.trim();
-    const dailyTally = $('#sm-tally') ? $('#sm-tally').value.trim() : '';
-
-    const lastfmUser = $('#sm-lastfm-user') ? $('#sm-lastfm-user').value.trim() : '';
-    const lastfmApiKey = $('#sm-lastfm-key') ? $('#sm-lastfm-key').value.trim() : '';
+    const reading = $('#sm-reading') ? $('#sm-reading').value.trim() : '';
+    const onRepeat = $('#sm-repeat') ? $('#sm-repeat').value.trim() : '';
+    const daydreaming = $('#sm-daydreaming') ? $('#sm-daydreaming').value.trim() : '';
 
     const newStatus = {
       reading:      reading,
       onRepeat:     onRepeat || 'Where’s My Love — SYML',
-      crafting:     crafting,
-      daydreaming:  daydreaming,
-      dailyTally:   dailyTally || '3 cups of genmaicha · 1 completed puzzle · 4,200 steps',
-      lastfmUser:   lastfmUser,
-      lastfmApiKey: lastfmApiKey
+      daydreaming:  daydreaming
     };
-
-    Data.saveLastFm({
-      username: lastfmUser,
-      apiKey:   lastfmApiKey
-    });
 
     closeStatusModal();
     renderCurrently();
-    setupLastFmPolling();
 
     try {
       await Data.saveLiveStatus(newStatus);
       showToast('Sidebar status synced to Supabase.');
     } catch (e) {
       showToast('Status saved locally.');
-    }
-  }
-
-  async function handleLastFmTestConnection() {
-    const user = ($('#sm-lastfm-user') ? $('#sm-lastfm-user').value : '').trim();
-    const key = ($('#sm-lastfm-key') ? $('#sm-lastfm-key').value : '').trim();
-    const statusEl = $('#sm-lastfm-status');
-    const testBtn = $('#sm-lastfm-test');
-
-    if (!user || !key) {
-      if (statusEl) {
-        statusEl.className = 'lastfm-status-msg error';
-        statusEl.textContent = 'Please enter both Username and API Key.';
-      }
-      return;
-    }
-
-    if (testBtn) testBtn.disabled = true;
-    if (statusEl) {
-      statusEl.className = 'lastfm-status-msg';
-      statusEl.textContent = 'Checking…';
-    }
-
-    try {
-      const url = `https://ws.audioscrobbler.com/2.0/?method=user.getrecenttracks&user=${encodeURIComponent(user)}&api_key=${encodeURIComponent(key)}&format=json&limit=1`;
-      const res = await fetch(url, { cache: 'no-cache' });
-      if (!res.ok) {
-        if (statusEl) {
-          statusEl.className = 'lastfm-status-msg error';
-          statusEl.textContent = `HTTP ${res.status}: Check credentials.`;
-        }
-        if (testBtn) testBtn.disabled = false;
-        return;
-      }
-      const data = await res.json();
-      if (data.error) {
-        if (statusEl) {
-          statusEl.className = 'lastfm-status-msg error';
-          statusEl.textContent = data.message || 'API error: Check username or API key.';
-        }
-        if (testBtn) testBtn.disabled = false;
-        return;
-      }
-
-      const track = extractLastFmTrack(data);
-      if (statusEl) {
-        statusEl.className = 'lastfm-status-msg success';
-        if (track) {
-          const mode = track.nowPlaying ? 'Now playing' : 'Last played';
-          statusEl.textContent = `Connected! (${mode}: ${track.title} — ${track.artist})`;
-        } else {
-          statusEl.textContent = 'Connected! (No recent tracks found yet)';
-        }
-      }
-    } catch (err) {
-      if (statusEl) {
-        statusEl.className = 'lastfm-status-msg error';
-        statusEl.textContent = 'Connection failed (offline or network error).';
-      }
-    } finally {
-      if (testBtn) testBtn.disabled = false;
     }
   }
 
@@ -2548,11 +2369,6 @@ window.ZLog = window.ZLog || {};
       });
     }
 
-    // Status modal test connection
-    if (dom.smLastfmTest) {
-      dom.smLastfmTest.addEventListener('click', handleLastFmTestConnection);
-    }
-
     // "Currently" music click → play track if link available or display toast
     dom.currentlyItems.addEventListener('click', (e) => {
       const playEl = e.target.closest('#currently-play');
@@ -2595,7 +2411,6 @@ window.ZLog = window.ZLog || {};
     renderFilters();
     renderFeed();
     renderCurrently();
-    setupLastFmPolling();
     bindEvents();
     await initAuthorAuth();
     await syncAndRenderPosts();
