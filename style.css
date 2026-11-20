@@ -572,51 +572,20 @@ textarea {
   box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.5);
 }
 
-/* ── Running Notebook Top Bar ── */
-.diary-running-header {
+/* ── Top Notebook Actions Bar (Clean, borderless, no date/title) ── */
+.diary-top-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 24px;
-  border-bottom: 1px solid #E5EDE0;
-  background: rgba(250, 253, 248, 0.94);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  justify-content: flex-end;
+  padding: 18px 24px 0 24px;
   position: relative;
   z-index: 30;
-  gap: 16px;
 }
 
-[data-theme="dark"] .diary-running-header {
-  background: rgba(20, 32, 24, 0.94);
-  border-bottom-color: #26352B;
-}
-
-.diary-date-stamp {
-  font-family: var(--font-base);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--ink-muted);
-  text-transform: uppercase;
-  user-select: none;
-}
-
+.diary-running-header,
+.diary-date-stamp,
 .diary-running-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-base);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink);
-  text-decoration: none;
-  letter-spacing: -0.01em;
-  transition: color 0.15s ease;
-}
-
-.diary-running-title:hover {
-  color: var(--accent);
+  display: none !important;
 }
 
 .sage-sparkle-icon {
@@ -628,7 +597,7 @@ textarea {
   flex-shrink: 0;
 }
 
-.diary-running-title:hover .sage-sparkle-icon {
+.sage-sparkle-icon:hover {
   transform: rotate(18deg) scale(1.15);
 }
 

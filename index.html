@@ -44,21 +44,8 @@
   <!-- ═══════════ OPEN GRAPH-PAPER DIARY NOTEBOOK ═══════════ -->
   <main class="diary-notebook" id="main-layout">
 
-    <!-- Running Notebook Top Bar -->
-    <header class="diary-running-header" id="diary-running-header">
-      <!-- Left: Current Month / Year -->
-      <div class="diary-date-stamp" id="diary-running-date">NOVEMBER ’26</div>
-
-      <!-- Center: Title with 4-point Star -->
-      <a href="#" class="diary-running-title" id="logo-link">
-        <span class="diary-title-text">I’ll Try Anything Once</span>
-        <!-- Minimal Sage Geometric Star SVG (Triple-click unlocks Author Mode) -->
-        <svg class="sage-sparkle-icon" id="masthead-sparkle" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" role="button" tabindex="0" aria-label="Author access" title="✦">
-          <path d="M8 0C8.3 4 12 7.7 16 8C12 8.3 8.3 12 8 16C7.7 12 4 8.3 0 8C4 7.7 7.7 4 8 0Z" fill="currentColor"/>
-        </svg>
-      </a>
-
-      <!-- Right: Actions -->
+    <!-- Top Action Navigation (Index, Theme, Write Entry) -->
+    <nav class="diary-top-actions" aria-label="Page actions">
       <div class="header-actions">
         <!-- Author Mode Sign Out Pill (Visible only in Author Mode) -->
         <button class="author-mode-pill author-only" id="author-signout-btn" title="Sign out of Author Mode">
@@ -91,7 +78,7 @@
           <span class="btn-label">Write Entry</span>
         </button>
       </div>
-    </header>
+    </nav>
 
     <!-- ═══════════ LANDING PAGE DIARY SPREAD ═══════════ -->
     <div class="landing-view" id="landing-view">
@@ -101,7 +88,7 @@
         
         <!-- Left Side: Dear diary & Zee's note with hand-drawn sage circle -->
         <div class="diary-spread-left">
-          <div class="diary-salutation">Dear diary,</div>
+          <a href="#" class="diary-salutation" id="logo-link" style="text-decoration:none; color:inherit;">Dear diary,</a>
           <p class="diary-intro-body">
             Half-formed essays, nocturnal thoughts, knitted afternoons, and
             <span class="circled-phrase">
@@ -113,6 +100,9 @@
           </p>
           <div class="diary-spread-author">
             <span class="diary-author-signoff">Hi, I’m Zee</span>
+            <svg class="sage-sparkle-icon" id="masthead-sparkle" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" role="button" tabindex="0" aria-label="Author access" title="✦" style="display:inline-block; vertical-align:middle; margin-left:6px; width:12px; height:12px;">
+              <path d="M8 0C8.3 4 12 7.7 16 8C12 8.3 8.3 12 8 16C7.7 12 4 8.3 0 8C4 7.7 7.7 4 8 0Z" fill="currentColor"/>
+            </svg>
           </div>
         </div>
 

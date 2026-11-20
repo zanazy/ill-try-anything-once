@@ -2219,15 +2219,17 @@ window.ZLog = window.ZLog || {};
     // Theme
     dom.themeToggle.addEventListener('click', toggleTheme);
 
-    // Logo → reset
-    dom.logoLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (readerOpen) closeReader();
-      if (editorOpen) closeEditor();
-      activeFilter = 'All';
-      renderFilters();
-      renderFeed();
-    });
+    // Logo / Salutation → reset
+    if (dom.logoLink) {
+      dom.logoLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (readerOpen) closeReader();
+        if (editorOpen) closeEditor();
+        activeFilter = 'All';
+        renderFilters();
+        renderFeed();
+      });
+    }
 
     // Filters
     dom.filterBar.addEventListener('click', handleFilterClick);
