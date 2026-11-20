@@ -370,63 +370,140 @@ button, input, select, textarea {
   border-radius: 50%;
 }
 
-/* ── Category Filters ── */
+/* ── Bare Editorial Navigation Filter Bar (Zero Bubble Shapes) ── */
 .filter-bar {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 14px 24px;
+  padding: 0 24px;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 0;
   overflow-x: auto;
   scrollbar-width: none;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #DCE5D5;
+  position: relative;
+}
+
+[data-theme="dark"] .filter-bar {
+  border-bottom-color: rgba(140, 194, 155, 0.2);
 }
 
 .filter-bar::-webkit-scrollbar { display: none; }
 
-.filter-pill {
+.filter-slash {
+  color: #B8C7B5;
   font-family: var(--font-base);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  padding: 6px 14px;
-  border-radius: 9999px;
-  border: 1px solid transparent;
-  background: #EBF1E7;
-  color: #3C5844;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s var(--ease);
+  font-size: 13px;
+  font-weight: 300;
+  user-select: none;
+  margin: 0 10px;
+  opacity: 0.65;
 }
 
+[data-theme="dark"] .filter-slash {
+  color: rgba(147, 168, 154, 0.4);
+}
+
+.filter-nav-btn,
+.filter-pill {
+  font-family: var(--font-base);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  padding: 14px 4px 12px;
+  background: transparent;
+  color: #677A6D;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  text-transform: lowercase;
+  transition: color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.filter-nav-btn:hover,
 .filter-pill:hover {
-  background: #E2ECE0;
-  color: #27402F;
+  color: #1E2E24;
+  background: transparent;
   transform: translateY(-1px);
 }
 
-.filter-pill.active {
-  background: var(--accent);
-  color: #ffffff;
-  border-color: var(--accent);
-  box-shadow: 0 3px 10px -2px rgba(83, 126, 96, 0.3);
+[data-theme="dark"] .filter-nav-btn,
+[data-theme="dark"] .filter-pill {
+  color: #93A89A;
+  background: transparent;
 }
 
-[data-theme="dark"] .filter-pill {
-  background: rgba(140, 194, 155, 0.12);
-  color: #B5D4BF;
+[data-theme="dark"] .filter-nav-btn:hover,
+[data-theme="dark"] .filter-pill:hover {
+  color: #E4EDE6;
+  background: transparent;
+}
+
+.filter-count {
+  font-family: var(--font-base);
+  font-size: 10px;
+  font-weight: 400;
+  color: #8C9E92;
+  margin-left: 1px;
+  top: -0.45em;
+  position: relative;
+  transition: color 0.2s var(--ease);
+}
+
+.filter-nav-btn:hover .filter-count,
+.filter-pill:hover .filter-count {
+  color: var(--accent);
+}
+
+/* Active State: Deep forest green, soft matcha marker swipe, 2px sage bottom indicator flush on hairline */
+.filter-nav-btn.active,
+.filter-pill.active {
+  color: #1E2E24;
+  font-weight: 500;
+  background: linear-gradient(transparent 56%, #D4E6CD 56%);
+  box-shadow: none;
   border-color: transparent;
 }
 
-[data-theme="dark"] .filter-pill:hover {
-  background: rgba(140, 194, 155, 0.2);
-  color: #E4EDE6;
+.filter-nav-btn.active::after,
+.filter-pill.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #537E60;
+  border-radius: 1px;
 }
 
+[data-theme="dark"] .filter-nav-btn.active,
 [data-theme="dark"] .filter-pill.active {
-  background: var(--accent);
-  color: #141D17;
-  border-color: var(--accent);
+  color: #E4EDE6;
+  background: linear-gradient(transparent 56%, rgba(140, 194, 155, 0.28) 56%);
+  box-shadow: none;
+  border-color: transparent;
+}
+
+[data-theme="dark"] .filter-nav-btn.active::after,
+[data-theme="dark"] .filter-pill.active::after {
+  background: #8CC29B;
+}
+
+.filter-nav-btn.active .filter-count,
+.filter-pill.active .filter-count {
+  color: #537E60;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .filter-nav-btn.active .filter-count,
+[data-theme="dark"] .filter-pill.active .filter-count {
+  color: #8CC29B;
 }
 
 /* ── Main Layout ── */
@@ -920,125 +997,94 @@ button, input, select, textarea {
   50% { opacity: 0.4; }
 }
 
-/* ── Entry Tags System ── */
+/* ── Clean Editorial Post Card Tag Labels (No Bubble Shapes) ── */
 .entry-tags {
-  display: flex;
-  gap: 6px;
+  display: inline-flex;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: 14px;
 }
 
 .entry-tag {
   font-family: var(--font-base);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 400;
-  padding: 4px 11px;
-  border-radius: 9999px;
-  background: var(--surface-soft);
+  letter-spacing: 0.01em;
   color: var(--ink-muted);
-  border: 1px solid var(--border);
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  letter-spacing: 0.01em;
-  line-height: 1.4;
-  transition: all 0.2s var(--ease);
+  gap: 4px;
+  line-height: inherit;
+  cursor: pointer;
+  transition: color 0.2s var(--ease);
 }
 
 .entry-tag:hover {
-  transform: translateY(-1px);
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transform: none;
 }
 
-/* 1. might delete later #01: Translucent vellum-cream pill with delicate 1px dashed #8DA893 border */
+/* Category subtle color accents on typography */
 .entry-tag--mdl {
-  background: rgba(255, 255, 255, 0.72) !important;
-  border: 1px dashed #8DA893 !important;
-  color: #43634C !important;
-  font-style: normal;
+  color: var(--accent) !important;
   font-weight: 500;
-  letter-spacing: 0.01em;
 }
 
 [data-theme="dark"] .entry-tag--mdl {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px dashed rgba(140, 194, 155, 0.4) !important;
-  color: #B2D4BD !important;
+  color: var(--accent) !important;
 }
 
-/* 2. nocturnal thoughts: Soft twilight blue-sage tint (#E2EAEB in light mode) with crescent moon SVG */
 .entry-tag--nocturnal {
-  background: #E2EAEB !important;
-  color: #2C4344 !important;
-  border: 1px solid #CAD5D6 !important;
+  color: #4A6E6B !important;
 }
 
 [data-theme="dark"] .entry-tag--nocturnal {
-  background: #1C2B29 !important;
-  color: #A6C9C6 !important;
-  border: 1px solid rgba(166, 201, 198, 0.25) !important;
+  color: #9FC4C0 !important;
 }
 
-.entry-tag--nocturnal .tag-moon-icon {
-  stroke: currentColor;
-}
-
-/* 3. rants: Soft dusty rose-clay tint (#EFE3E0 background, #8C584C text) */
 .entry-tag--rants {
-  background: #EFE3E0 !important;
   color: #8C584C !important;
-  border: 1px solid #DFCDC8 !important;
 }
 
 [data-theme="dark"] .entry-tag--rants {
-  background: #2E2220 !important;
   color: #D4A89F !important;
-  border: 1px solid rgba(212, 168, 159, 0.25) !important;
 }
 
-/* 4. brain dump: pale celadon */
 .entry-tag--braindump {
-  background: #E8F2E6 !important;
   color: #3D6147 !important;
-  border: 1px solid #CFE2CB !important;
 }
 
 [data-theme="dark"] .entry-tag--braindump {
-  background: #1D2D20 !important;
   color: #A9D1B3 !important;
-  border: 1px solid rgba(169, 209, 179, 0.25) !important;
 }
 
-/* 5. tiny wins: soft mint mist */
 .entry-tag--tinywins {
-  background: #E3EFE9 !important;
   color: #385E4E !important;
-  border: 1px solid #C9DFD3 !important;
 }
 
 [data-theme="dark"] .entry-tag--tinywins {
-  background: #1B2B24 !important;
   color: #9FC9B5 !important;
-  border: 1px solid rgba(159, 201, 181, 0.25) !important;
 }
 
-/* 6. field notes: delicate oat mist */
 .entry-tag--fieldnotes {
-  background: #EFECE4 !important;
   color: #5E5745 !important;
-  border: 1px solid #DCD6C7 !important;
 }
 
 [data-theme="dark"] .entry-tag--fieldnotes {
-  background: #2A2822 !important;
-  color: #D2CABA !important;
-  border: 1px solid rgba(210, 202, 186, 0.25) !important;
+  color: #C7BD9F !important;
 }
 
-/* 7. slow afternoons: soft sunny morning sage */
 .entry-tag--slowafternoons {
-  background: #EDF2E8 !important;
   color: #476145 !important;
-  border: 1px solid #D2E0CC !important;
+}
+
+[data-theme="dark"] .entry-tag--slowafternoons {
+  color: #A5C4A3 !important;
 }
 
 [data-theme="dark"] .entry-tag--slowafternoons {
@@ -1557,7 +1603,7 @@ button, input, select, textarea {
   border-top: 1px dashed var(--border-dash);
 }
 
-/* ── Tag Checkbox Grid ── */
+/* ── Minimal Editor Tag Selector (Rectangular Index-Card Tabs) ── */
 .tag-checkboxes {
   display: flex;
   gap: 8px;
@@ -1569,15 +1615,17 @@ button, input, select, textarea {
 }
 
 .tag-checkbox-label {
+  font-family: var(--font-base);
   font-size: 12px;
-  font-weight: 500;
-  padding: 6px 13px;
-  border-radius: 20px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  padding: 6px 12px;
+  border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink-muted);
   cursor: pointer;
-  transition: all 0.2s var(--ease);
+  transition: all 0.15s var(--ease);
   user-select: none;
   display: inline-flex;
   align-items: center;
@@ -1585,58 +1633,35 @@ button, input, select, textarea {
 }
 
 .tag-checkbox-label:hover {
-  border-color: var(--ink-muted);
+  border-color: var(--border-dash);
   color: var(--ink);
+  background: var(--surface-soft);
 }
 
 .tag-checkbox:checked + .tag-checkbox-label {
-  background: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(83, 126, 96, 0.12);
 }
 
-/* Checked styling per quick tag in editor */
-.tag-checkbox:checked + .tag-checkbox-label[data-tag="might delete later"] {
-  border: 1px dashed #8DA893 !important;
-  background: rgba(255, 255, 255, 0.72) !important;
-  color: #43634C !important;
-  font-style: italic;
+[data-theme="dark"] .tag-checkbox-label {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink-muted);
 }
 
-.tag-checkbox:checked + .tag-checkbox-label[data-tag="nocturnal thoughts"] {
-  background: #E2EAEB !important;
-  color: #2C4344 !important;
-  border: 1px solid #CAD5D6 !important;
+[data-theme="dark"] .tag-checkbox-label:hover {
+  border-color: var(--border-dash);
+  color: var(--ink);
 }
 
-.tag-checkbox:checked + .tag-checkbox-label[data-tag="rants"] {
-  background: #EFE3E0 !important;
-  color: #8C584C !important;
-  border: 1px solid #DFCDC8 !important;
-}
-
-.tag-checkbox:checked + .tag-checkbox-label[data-tag="brain dump"] {
-  background: #E8F2E6 !important;
-  color: #3D6147 !important;
-  border: 1px solid #CFE2CB !important;
-}
-
-.tag-checkbox:checked + .tag-checkbox-label[data-tag="tiny wins"] {
-  background: #E3EFE9 !important;
-  color: #385E4E !important;
-  border: 1px solid #C9DFD3 !important;
-}
-
-.tag-checkbox:checked + .tag-checkbox-label[data-tag="field notes"] {
-  background: #EFECE4 !important;
-  color: #5E5745 !important;
-  border: 1px solid #DCD6C7 !important;
-}
-
-.tag-checkbox:checked + .tag-checkbox-label[data-tag="slow afternoons"] {
-  background: #EDF2E8 !important;
-  color: #476145 !important;
-  border: 1px solid #D2E0CC !important;
+[data-theme="dark"] .tag-checkbox:checked + .tag-checkbox-label {
+  background: rgba(140, 194, 155, 0.18) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: none;
 }
 
 /* ── Live Preview Box for "might delete later" auto numbering ── */

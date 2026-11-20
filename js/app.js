@@ -288,7 +288,7 @@ window.ZLog = window.ZLog || {};
       label = `might delete later ${numStr}`;
       modifierClass = 'entry-tag--mdl';
     } else if (clean === 'nocturnal thoughts') {
-      label = `<svg class="tag-moon-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> nocturnal thoughts`;
+      label = 'nocturnal thoughts';
       modifierClass = 'entry-tag--nocturnal';
     } else if (clean === 'rants') {
       label = 'rants';
@@ -307,24 +307,30 @@ window.ZLog = window.ZLog || {};
       modifierClass = 'entry-tag--slowafternoons';
     }
 
-    return `<span class="entry-tag ${modifierClass}" data-filter-tag="${clean}">${label}</span>`;
+    return `<span class="entry-tag ${modifierClass}" data-filter-tag="${clean}">— ${label}</span>`;
   }
 
   /* ═══════════════════════════════════════
-     FILTERS
+     FILTERS (Bare Editorial Navigation)
      ═══════════════════════════════════════ */
 
   function renderFilters() {
-    dom.filterBar.innerHTML = Data.TAGS.map(tag => `
-      <button class="filter-pill${tag.toLowerCase() === activeFilter.toLowerCase() ? ' active' : ''}"
-              data-tag="${tag}">${tag}</button>
-    `).join('');
+    const allEntries = Data.loadEntries();
+    dom.filterBar.innerHTML = Data.TAGS.map((tag, index) => {
+      const count = tag.toLowerCase() === 'all'
+        ? allEntries.length
+        : Data.getFilteredEntries(tag).length;
+      const isActive = tag.toLowerCase() === activeFilter.toLowerCase();
+      const label = tag.toLowerCase();
+      const slash = index > 0 ? '<span class="filter-slash" aria-hidden="true">/</span>' : '';
+      return `${slash}<button class="filter-nav-btn${isActive ? ' active' : ''}" data-tag="${tag}">${label}<sup class="filter-count">${count}</sup></button>`;
+    }).join('');
   }
 
   function handleFilterClick(e) {
-    const pill = e.target.closest('.filter-pill');
-    if (!pill) return;
-    activeFilter = pill.dataset.tag;
+    const btn = e.target.closest('.filter-nav-btn, .filter-pill');
+    if (!btn) return;
+    activeFilter = btn.dataset.tag;
     renderFilters();
     renderFeed();
   }
@@ -358,8 +364,8 @@ window.ZLog = window.ZLog || {};
          </div>`
       : '';
 
-    const tagsHtml = (entry.tags || []).map(t =>
-      formatTagBadge(t, entry.id, mdlMap)
+    const tagsMetaHtml = (entry.tags || []).map(t =>
+      `<span class="dot"></span>` + formatTagBadge(t, entry.id, mdlMap)
     ).join('');
 
     return `
@@ -368,17 +374,18 @@ window.ZLog = window.ZLog || {};
           <span>${formatDate(entry.date || entry.createdAt)}</span>
           <span class="dot"></span>
           <span>${entry.readingTime || '?'} min read</span>
+          ${tagsMetaHtml}
         </div>
         ${coverHtml}
         <h2>${entry.title}</h2>
         ${entry.subtitle ? `<p class="entry-subtitle">${entry.subtitle}</p>` : ''}
         ${songPillHtml}
-        ${tagsHtml ? `<div class="entry-tags">${tagsHtml}</div>` : ''}
       </article>
     `;
   }
 
   function renderFeed() {
+    renderFilters();
     const allEntries = Data.loadEntries();
     const mdlMap = Data.getMightDeleteLaterMap(allEntries);
     const entries = Data.getFilteredEntries(activeFilter);
@@ -745,8 +752,8 @@ window.ZLog = window.ZLog || {};
       </div>
     ` : '';
 
-    const tagsHtml = (entry.tags || []).map(t =>
-      formatTagBadge(t, entry.id, mdlMap)
+    const tagsMetaHtml = (entry.tags || []).map(t =>
+      `<span class="dot"></span>` + formatTagBadge(t, entry.id, mdlMap)
     ).join('');
 
     // Process body — wrap plain text in <p> tags if needed
@@ -761,10 +768,10 @@ window.ZLog = window.ZLog || {};
           <span>${formatDate(entry.date || entry.createdAt)}</span>
           <span class="dot"></span>
           <span>${entry.readingTime || '?'} min read</span>
+          ${tagsMetaHtml}
         </div>
         <h1>${entry.title}</h1>
         ${entry.subtitle ? `<p class="reader-subtitle">${entry.subtitle}</p>` : ''}
-        ${tagsHtml ? `<div class="entry-tags" style="margin-top:14px;">${tagsHtml}</div>` : ''}
       </div>
 
       ${soundtrackHtml}
