@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>I’ll Try Anything Once — a sonic diary &amp; visual sketchbook by zee</title>
+  <meta name="description" content="Visual scraps, nocturnal thoughts, knitted afternoons, and songs worth keeping. A personal editorial blog and sonic diary by Zee.">
+
+  <!-- Open Graph & Social SEO -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="I’ll Try Anything Once — a sonic diary &amp; visual sketchbook by zee">
+  <meta property="og:description" content="Visual scraps, nocturnal thoughts, knitted afternoons, and songs worth keeping. A personal editorial blog and sonic diary by Zee.">
+  <meta property="og:site_name" content="I’ll Try Anything Once">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="I’ll Try Anything Once">
+  <meta name="twitter:description" content="Visual scraps, nocturnal thoughts, knitted afternoons, and songs worth keeping. A personal editorial blog and sonic diary by Zee.">
+
+  <!-- Google Fonts: Newsreader (soft italic), Instrument Serif, Plus Jakarta Sans, Space Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500;1,6..72,600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Favicon (minimal botanical sage 4-point sparkle inline SVG data URI) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 C16.5 9 23 15.5 30 16 C23 16.5 16.5 23 16 30 C15.5 23 9 16.5 2 16 C9 15.5 15.5 9 16 2 Z' fill='%23537E60'/%3E%3C/svg%3E">
+
+  <!-- Supabase JS Client v2 from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- Ambient Dreamy Botanical Glows -->
+  <div class="ambient-glow ambient-glow--1" aria-hidden="true"></div>
+  <div class="ambient-glow ambient-glow--2" aria-hidden="true"></div>
+
+  <!-- Reading Progress Bar -->
+  <div id="reading-progress"></div>
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="site-masthead-wrapper">
+        <a href="#" class="site-logo" id="logo-link">
+          <!-- Sleeping Ginger Cat Silhouette SVG Mark -->
+          <svg class="cat-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 22c0-5 3-9 7-10l-2-6c0-1 1-2 2-1l4 4 4-4c1-1 2 0 2 1l-2 6c4 1 7 5 7 10 0 3-2 5-5 5H11c-3 0-5-2-5-5z"/>
+            <circle cx="13" cy="19" r="1.2" fill="var(--bg)"/>
+            <circle cx="19" cy="19" r="1.2" fill="var(--bg)"/>
+            <ellipse cx="16" cy="21" rx="1.5" ry="0.8" fill="var(--bg)"/>
+          </svg>
+          <div class="masthead-text-group">
+            <div class="masthead-title-row">
+              <span class="logo-text">I’ll Try Anything Once</span>
+              <!-- Minimal Sage Geometric Star SVG (Triple-click unlocks Author Mode) -->
+              <svg class="sage-sparkle-icon" id="masthead-sparkle" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" role="button" tabindex="0" aria-label="Author access" title="✦">
+                <path d="M8 0C8.3 4 12 7.7 16 8C12 8.3 8.3 12 8 16C7.7 12 4 8.3 0 8C4 7.7 7.7 4 8 0Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="logo-byline">a sonic diary &amp; visual sketchbook by zee</div>
+          </div>
+        </a>
+      </div>
+
+      <div class="header-actions">
+        <!-- Author Mode Sign Out Pill (Visible only in Author Mode) -->
+        <button class="author-mode-pill author-only" id="author-signout-btn" title="Sign out of Author Mode">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Sign Out</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button class="btn btn-icon btn-ghost" id="theme-toggle" title="Toggle theme" aria-label="Toggle dark mode">
+          <span id="theme-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </span>
+        </button>
+
+        <!-- Write Entry (Author only) -->
+        <button class="btn btn-primary author-only" id="write-btn">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0L9.8 6.2L16 8L9.8 9.8L8 16L6.2 9.8L0 8L6.2 6.2L8 0Z"/>
+          </svg>
+          <span class="btn-label">Write Entry</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <nav class="filter-bar" id="filter-bar" aria-label="Filter entries by category">
+      <!-- Rendered by JS -->
+    </nav>
+  </header>
+
+  <!-- ═══════════ MAIN LAYOUT ═══════════ -->
+  <main class="main-layout" id="main-layout">
+
+    <!-- Feed Column -->
+    <section class="feed-column" id="feed-column" aria-label="Journal entries">
+      <!-- Entry cards rendered by JS -->
+    </section>
+
+    <!-- Sidebar Column -->
+    <aside class="sidebar-column" id="sidebar-column">
+
+      <!-- Zee's Dreamy Author Card -->
+      <div class="author-card dream-card">
+        <div class="author-header">
+          <h3 class="author-name">Hi, I’m Zee</h3>
+          <span class="author-tag">visual diary</span>
+        </div>
+        <p class="author-quote">
+          “Half-formed essays, nocturnal thoughts, knitted afternoons, and songs I keep on repeat.”
+        </p>
+      </div>
+
+      <hr class="stitch-divider">
+
+      <!-- Currently Status Widget -->
+      <div class="currently-card" id="currently-card">
+        <h4>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <circle cx="6" cy="6" r="1.5" fill="currentColor"/>
+          </svg>
+          Currently
+        </h4>
+        <button class="edit-status-btn author-only" id="edit-status-btn">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Edit</span>
+        </button>
+        <div id="currently-items">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <hr class="stitch-divider author-only">
+
+      <!-- Author & Publishing Tools (Author Only) -->
+      <div class="data-tools author-only">
+        <h4>Author &amp; Publishing Tools</h4>
+        <div class="data-tools-actions">
+          <button class="btn btn-primary" id="download-posts-js-btn" style="font-size:12px; width:100%; justify-content:center;" title="Download posts.js to deploy to your static hosting">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download posts.js</span>
+          </button>
+        </div>
+        <p class="data-tools-hint">Drop into your project folder &amp; redeploy to publish new entries to all visitors.</p>
+
+        <!-- Seed starter entries button (shows when Supabase posts table is empty) -->
+        <div id="seed-db-container" style="display:none; margin-top:10px;">
+          <button class="btn" id="seed-database-btn" style="font-size:11.5px; width:100%; justify-content:center; background:var(--accent-soft); color:var(--accent); border:1px dashed var(--accent);">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0L9.8 6.2L16 8L9.8 9.8L8 16L6.2 9.8L0 8L6.2 6.2L8 0Z"/></svg>
+            <span>Seed starter entries to database</span>
+          </button>
+        </div>
+
+        <div class="data-tools-actions" style="margin-top:10px;">
+          <button class="btn" id="export-btn" style="font-size:11.5px; flex:1;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export Backup</span>
+          </button>
+          <label class="btn" style="font-size:11.5px; cursor:pointer; flex:1; text-align:center;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Import</span>
+            <input type="file" accept=".json" id="import-input" style="display:none;">
+          </label>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- ═══════════ READER OVERLAY ═══════════ -->
+  <div class="reader-overlay" id="reader-overlay" role="dialog" aria-modal="true" aria-label="Article reader">
+    <button class="reader-close" id="reader-close" aria-label="Close reader">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <article class="reader-content" id="reader-content">
+      <!-- Rendered by JS -->
+    </article>
+  </div>
+
+  <!-- ═══════════ EDITOR OVERLAY ═══════════ -->
+  <div class="editor-overlay" id="editor-overlay" role="dialog" aria-modal="true" aria-label="Entry editor">
+    <div class="editor-content">
+      <div class="editor-header">
+        <h2>New Entry</h2>
+        <button class="btn btn-ghost" id="editor-close">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span>Close</span>
+        </button>
+      </div>
+
+      <form id="editor-form" autocomplete="off">
+        <div class="editor-field">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label for="ed-title" style="margin-bottom:0;">Title</label>
+            <span id="title-hint" style="font-size:11px; color:var(--ink-muted); font-style:italic;">Optional for quick series</span>
+          </div>
+          <input type="text" id="ed-title" placeholder="What's on your mind today? (or leave blank for auto-title)">
+        </div>
+
+        <div class="editor-field">
+          <label for="ed-subtitle">Subtitle / Excerpt</label>
+          <input type="text" id="ed-subtitle" placeholder="A brief teaser for the feed…">
+        </div>
+
+        <div class="editor-field">
+          <label for="ed-date">Date</label>
+          <input type="date" id="ed-date">
+        </div>
+
+        <div class="editor-field">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="margin-bottom:0;">Quick Tags</label>
+            <span style="font-size:11px; color:var(--ink-muted);">Tap to toggle tags</span>
+          </div>
+          <div class="tag-checkboxes" id="ed-tags">
+            <!-- Rendered by JS -->
+          </div>
+          <div id="mdl-preview-box" class="mdl-preview-box" style="display:none;">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0L9.8 6.2L16 8L9.8 9.8L8 16L6.2 9.8L0 8L6.2 6.2L8 0Z"/></svg>
+            <span id="mdl-preview-text">Will be published as: <strong>might delete later #02</strong></span>
+          </div>
+        </div>
+
+        <hr class="stitch-divider">
+
+        <div class="editor-field">
+          <label>Soundtrack</label>
+          <div class="editor-row">
+            <div class="editor-field">
+              <label for="ed-track-title" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);">Song Title</label>
+              <input type="text" id="ed-track-title" placeholder="e.g., Daydream">
+            </div>
+            <div class="editor-field">
+              <label for="ed-track-artist" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);">Artist</label>
+              <input type="text" id="ed-track-artist" placeholder="e.g., Miki Matsubara">
+            </div>
+          </div>
+          <div class="editor-field" style="margin-top:0;">
+            <label for="ed-track-note" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);">Why this song fits</label>
+            <input type="text" id="ed-track-note" placeholder="A personal note about this soundtrack…">
+          </div>
+          <div class="editor-row">
+            <div class="editor-field">
+              <label for="ed-track-preset" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);">Ambient Preset</label>
+              <select id="ed-track-preset">
+                <option value="">— None (custom URL only) —</option>
+                <option value="warmRhodes">Warm Rhodes Chords</option>
+                <option value="rainCrackle">Rain & Vinyl Crackle</option>
+                <option value="lofiPiano">Lo-Fi Piano</option>
+              </select>
+            </div>
+            <div class="editor-field">
+              <label for="ed-track-url" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);">External URL (optional)</label>
+              <input type="url" id="ed-track-url" placeholder="Spotify or YouTube embed link…">
+            </div>
+          </div>
+        </div>
+
+        <hr class="stitch-divider">
+
+        <div class="editor-field">
+          <label for="ed-body">Your Entry</label>
+          <textarea id="ed-body" placeholder="Start writing… (supports basic HTML: &lt;p&gt;, &lt;blockquote&gt;, &lt;em&gt;, &lt;strong&gt;)"></textarea>
+        </div>
+
+        <div class="editor-actions">
+          <button type="submit" class="btn btn-primary">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0L9.8 6.2L16 8L9.8 9.8L8 16L6.2 9.8L0 8L6.2 6.2L8 0Z"/></svg>
+            <span>Publish Entry</span>
+          </button>
+          <button type="button" class="btn" id="editor-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ═══════════ STATUS EDIT MODAL ═══════════ -->
+  <div class="modal-backdrop" id="status-modal">
+    <div class="modal-box status-modal-box">
+      <h3>Update Currently</h3>
+      <div class="status-editor-fields">
+        <div>
+          <label for="sm-reading">Reading</label>
+          <input type="text" id="sm-reading">
+        </div>
+        <div>
+          <label for="sm-repeat">On Repeat (Song Title or YouTube Music URL)</label>
+          <input type="text" id="sm-repeat" placeholder="e.g. Where’s My Love — SYML or https://music.youtube.com/...">
+        </div>
+        <div>
+          <label for="sm-crafting">Crafting</label>
+          <input type="text" id="sm-crafting">
+        </div>
+        <div>
+          <label for="sm-daydreaming">Daydreaming of</label>
+          <input type="text" id="sm-daydreaming" placeholder="e.g., quiet greenhouse afternoons &amp; sunlit ceramic cups">
+        </div>
+
+        <!-- Connect Last.fm Section -->
+        <div class="lastfm-section">
+          <div class="lastfm-section-header">
+            <label class="lastfm-title-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Connect Last.fm (Live Now Playing)</span>
+            </label>
+          </div>
+          <p class="lastfm-hint">
+            Live scrobble from YouTube Music or desktop scrobbler. When connected, auto-fetches every 30 seconds. Leave empty to use manual song or YouTube Music link above.
+          </p>
+          <div class="lastfm-inputs">
+            <div class="lastfm-field">
+              <label for="sm-lastfm-user">Last.fm Username</label>
+              <input type="text" id="sm-lastfm-user" placeholder="e.g. your_username" autocomplete="off">
+            </div>
+            <div class="lastfm-field">
+              <label for="sm-lastfm-key">Last.fm API Key</label>
+              <input type="password" id="sm-lastfm-key" placeholder="32-character API key" autocomplete="off">
+            </div>
+          </div>
+          <div class="lastfm-test-row">
+            <button type="button" class="btn" id="sm-lastfm-test" style="font-size:11.5px; padding:6px 14px;">
+              Check Connection
+            </button>
+            <span class="lastfm-status-msg" id="sm-lastfm-status"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="status-modal-cancel">Cancel</button>
+        <button class="btn btn-primary" id="status-modal-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ AUTHOR LOGIN MODAL ═══════════ -->
+  <div class="modal-backdrop" id="author-modal" role="dialog" aria-modal="true" aria-labelledby="author-modal-title">
+    <div class="modal-box author-modal-box">
+      <div class="author-modal-header">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="var(--accent)" aria-hidden="true">
+          <path d="M8 0L9.8 6.2L16 8L9.8 9.8L8 16L6.2 9.8L0 8L6.2 6.2L8 0Z"/>
+        </svg>
+        <h3 id="author-modal-title">Author Login</h3>
+      </div>
+      <p class="author-modal-desc" id="author-modal-desc">
+        Sign in with your email and password to access editor controls and live Supabase sync.
+      </p>
+
+      <!-- Sign In Form (When not authenticated) -->
+      <form id="author-login-form">
+        <div class="author-modal-fields" id="author-login-fields">
+          <div class="author-input-group">
+            <label for="author-email-input">Email</label>
+            <input type="email" id="author-email-input" placeholder="zee@example.com" autocomplete="email" required>
+          </div>
+          <div class="author-input-group">
+            <label for="author-password-input">Password</label>
+            <input type="password" id="author-password-input" placeholder="••••••••" autocomplete="current-password" required>
+          </div>
+          <div class="author-pin-error" id="author-login-error"></div>
+        </div>
+        <div class="modal-actions" id="author-modal-actions">
+          <button type="button" class="btn" id="author-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="author-modal-submit">Sign In</button>
+        </div>
+      </form>
+
+      <!-- Authenticated Session Panel (When already signed in) -->
+      <div id="author-session-panel" style="display:none;">
+        <div class="author-session-info">
+          <div class="author-session-email" id="author-session-email"></div>
+          <div class="author-session-badge">Authenticated Author</div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn" id="author-modal-close-signed">Close</button>
+          <button type="button" class="btn" id="author-modal-signout" style="color:#B2533E; border-color:#DFCDC8;">Sign Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TOAST NOTICE ═══════════ -->
+  <div class="toast-notice" id="toast-notice" role="status" aria-live="polite"></div>
+
+  <!-- ═══════════ MINI PLAYER ═══════════ -->
+  <div class="mini-player" id="mini-player">
+    <div class="mini-player-inner">
+      <div class="mini-vinyl" id="mini-vinyl"></div>
+      <div class="mini-player-info">
+        <div class="mini-title" id="mini-title">—</div>
+        <div class="mini-artist" id="mini-artist">—</div>
+      </div>
+      <div class="mini-player-controls">
+        <input type="range" class="volume-slider" id="mini-volume" min="0" max="100" value="35" title="Volume">
+        <button class="mini-play-btn" id="mini-play-btn" aria-label="Play/Pause">
+          <svg class="icon-play" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+        </button>
+        <button class="mini-close-btn" id="mini-close-btn" aria-label="Close player">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCRIPTS ═══════════ -->
+  <script src="posts.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/synth.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
