@@ -311,22 +311,34 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       };
     }
     let tags = [];
-    if (Array.isArray(row.tags)) {
+    if (row.tag) {
+      tags = [row.tag];
+    } else if (Array.isArray(row.tags)) {
       tags = row.tags;
     } else if (typeof row.tags === 'string') {
       try { tags = JSON.parse(row.tags); } catch (e) { tags = [row.tags]; }
     }
+    const bodyContent = row.content || row.body || '';
+    const readingTime = Math.max(1, Math.round(bodyContent.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length / 230));
+
     return {
       id: String(row.id),
       title: row.title || '',
       subtitle: row.subtitle || '',
       date: row.date || (row.created_at ? row.created_at.slice(0, 10) : ''),
       tags: tags,
-      readingTime: row.reading_time || row.readingTime || 3,
+      tag: row.tag || (tags[0] || ''),
+      readingTime: row.reading_time || readingTime,
+      reading_time: row.reading_time || readingTime,
       coverGradient: row.cover_gradient || row.coverGradient || null,
       soundtrack: soundtrack,
       song_url: songUrl,
-      body: row.body || '',
+      song_title: row.song_title || (soundtrack ? soundtrack.title : ''),
+      song_artist: row.song_artist || (soundtrack ? soundtrack.artist : ''),
+      song_note: row.song_note || (soundtrack ? soundtrack.note : ''),
+      body: bodyContent,
+      content: bodyContent,
+      published: row.published !== undefined ? row.published : true,
       createdAt: row.created_at || row.createdAt || new Date().toISOString()
     };
   }
@@ -425,50 +437,55 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
   async function insertLivePost(entry) {
     const sb = getSupabase();
     if (!sb) {
-      return addEntry(entry);
+      const errMsg = 'Supabase client is not connected.';
+      alert('Supabase Insert Error: ' + errMsg);
+      const err = new Error(errMsg);
+      err._alerted = true;
+      throw err;
     }
 
-    const songUrl = entry.soundtrack ? (entry.soundtrack.url || null) : (entry.song_url || null);
+    const soundtrack = entry.soundtrack || {};
+    const songUrl = entry.song_url || soundtrack.url || null;
+    const songTitle = soundtrack.title || entry.song_title || '';
+    const songArtist = soundtrack.artist || entry.song_artist || '';
+    const songNote = soundtrack.note || entry.song_note || '';
 
+    // Pick tag (singular) from tags array or tag property
+    const tag = (entry.tags && entry.tags.length > 0) ? entry.tags[0] : (entry.tag || '');
+
+    // ONLY send columns that exist in public.posts
     const row = {
       title: entry.title,
       subtitle: entry.subtitle || '',
-      date: entry.date,
-      tags: entry.tags || [],
-      reading_time: entry.readingTime || 1,
-      cover_gradient: entry.coverGradient || null,
-      soundtrack: entry.soundtrack || null,
+      content: entry.body || entry.content || '',
+      tag: tag,
+      published: true,
+      created_at: entry.createdAt || new Date().toISOString(),
       song_url: songUrl,
-      body: entry.body || '',
-      created_at: entry.createdAt || new Date().toISOString()
+      song_title: songTitle,
+      song_artist: songArtist,
+      song_note: songNote
     };
 
-    try {
-      const { data, error } = await sb.from('posts').insert([row]).select();
-      if (error) {
-        // If Supabase schema does not have the song_url column yet, retry without song_url
-        if (error.message && error.message.includes('song_url')) {
-          console.warn('ZLog: song_url column not found, falling back to soundtrack json:', error.message);
-          delete row.song_url;
-          const retryRes = await sb.from('posts').insert([row]).select();
-          if (retryRes.error) throw retryRes.error;
-          const created = retryRes.data && retryRes.data[0] ? mapPostRow(retryRes.data[0]) : entry;
-          const current = loadEntries();
-          current.unshift(created);
-          saveEntries(current);
-          return created;
-        }
-        throw error;
-      }
-      const created = data && data[0] ? mapPostRow(data[0]) : entry;
-      const current = loadEntries();
-      current.unshift(created);
-      saveEntries(current);
-      return created;
-    } catch (err) {
-      console.warn('ZLog: Supabase insert post error, saving locally:', err);
-      return addEntry(entry);
+    if (entry.cover_image) {
+      row.cover_image = entry.cover_image;
     }
+
+    const { data, error } = await sb.from('posts').insert([row]).select();
+    if (error) {
+      console.error('ZLog: Supabase insert post error:', error);
+      alert('Supabase Insert Error: ' + (error.message || JSON.stringify(error)));
+      const err = new Error(error.message || 'Supabase insert failed');
+      err._alerted = true;
+      throw err;
+    }
+
+    const created = data && data[0] ? mapPostRow(data[0]) : mapPostRow(row);
+    const current = loadEntries();
+    const filtered = current.filter(e => e.id !== created.id);
+    filtered.unshift(created);
+    saveEntries(filtered);
+    return created;
   }
 
   async function deleteLivePost(id) {
@@ -477,10 +494,13 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       try {
         const { error } = await sb.from('posts').delete().eq('id', id);
         if (error) {
-          console.warn('ZLog: Supabase delete post warning:', error.message);
+          console.error('ZLog: Supabase delete post error:', error);
+          alert('Supabase Delete Error: ' + error.message);
+          throw error;
         }
       } catch (err) {
-        console.warn('ZLog: Supabase delete error:', err);
+        console.error('ZLog: Supabase delete error:', err);
+        throw err;
       }
     }
     deleteEntry(id);

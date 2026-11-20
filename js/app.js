@@ -1463,11 +1463,10 @@ window.ZLog = window.ZLog || {};
       syncAndRenderPosts();
       showToast('Entry published live to Supabase!');
     }).catch(err => {
-      console.warn('Publish fallback:', err);
-      Data.addEntry(entry);
-      closeEditor();
-      renderFeed();
-      showToast('Entry saved locally.');
+      console.error('Publish error:', err);
+      if (!err || !err._alerted) {
+        alert('Supabase Insert Error: ' + (err && err.message ? err.message : 'Failed to publish entry to Supabase.'));
+      }
     }).finally(() => {
       if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = false;
       if (publishBtnSpan) publishBtnSpan.textContent = 'Publish';
@@ -2414,9 +2413,16 @@ window.ZLog = window.ZLog || {};
     renderFeed();
     renderCurrently();
     bindEvents();
+
+    // Fetch Supabase select('*') posts and site_status for all visitors (anon and logged-in)
+    const publicDataSync = Promise.all([
+      syncAndRenderPosts(),
+      syncLiveStatus()
+    ]);
+
+    // Check author session in parallel without gating post fetching
     await initAuthorAuth();
-    await syncAndRenderPosts();
-    await syncLiveStatus();
+    await publicDataSync;
     handleHashRouting();
 
     console.log(
