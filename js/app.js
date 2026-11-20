@@ -44,7 +44,7 @@ window.ZLog = window.ZLog || {};
   const dom = {};
 
   function cacheDom() {
-    dom.filterBar     = $('#filter-bar');
+    dom.filterBar     = $('#index-nav') || $('#filter-bar');
     dom.feedColumn    = $('#feed-column');
     dom.sidebarColumn = $('#sidebar-column');
     dom.currentlyItems= $('#currently-items');
@@ -307,30 +307,39 @@ window.ZLog = window.ZLog || {};
       modifierClass = 'entry-tag--slowafternoons';
     }
 
-    return `<span class="entry-tag ${modifierClass}" data-filter-tag="${clean}">— ${label}</span>`;
+    return `<span class="entry-tag ${modifierClass}" data-filter-tag="${clean}">${label}</span>`;
   }
 
   /* ═══════════════════════════════════════
-     FILTERS (Bare Editorial Navigation)
+     FILTERS (Vertical Editorial Sidebar Index)
      ═══════════════════════════════════════ */
 
   function renderFilters() {
+    if (!dom.filterBar) return;
     const allEntries = Data.loadEntries();
-    dom.filterBar.innerHTML = Data.TAGS.map((tag, index) => {
+    dom.filterBar.innerHTML = Data.TAGS.map((tag) => {
       const count = tag.toLowerCase() === 'all'
         ? allEntries.length
         : Data.getFilteredEntries(tag).length;
+      const countPadded = String(count).padStart(2, '0');
       const isActive = tag.toLowerCase() === activeFilter.toLowerCase();
       const label = tag.toLowerCase();
-      const slash = index > 0 ? '<span class="filter-slash" aria-hidden="true">/</span>' : '';
-      return `${slash}<button class="filter-nav-btn${isActive ? ' active' : ''}" data-tag="${tag}">${label}<sup class="filter-count">${count}</sup></button>`;
+      return `
+        <button class="index-nav-item${isActive ? ' active' : ''}" data-tag="${tag}">
+          <span class="index-item-left">
+            <span class="index-indicator" aria-hidden="true">—</span>
+            <span class="index-label">${label}</span>
+          </span>
+          <span class="index-count">${countPadded}</span>
+        </button>
+      `;
     }).join('');
   }
 
   function handleFilterClick(e) {
-    const btn = e.target.closest('.filter-nav-btn, .filter-pill');
-    if (!btn) return;
-    activeFilter = btn.dataset.tag;
+    const item = e.target.closest('.index-nav-item, .filter-nav-btn, .filter-pill');
+    if (!item) return;
+    activeFilter = item.dataset.tag;
     renderFilters();
     renderFeed();
   }
