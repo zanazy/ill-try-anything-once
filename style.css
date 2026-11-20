@@ -618,7 +618,8 @@ textarea {
   padding: 38px 36px 36px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 16px;
   position: relative;
   box-shadow: inset -12px 0 18px -14px rgba(30, 46, 36, 0.08);
   border-right: 1px solid rgba(220, 229, 213, 0.6);
@@ -635,28 +636,47 @@ textarea {
     border-bottom: 1px solid #E5EDE0;
     box-shadow: none;
     padding: 28px 24px 24px;
+    gap: 14px;
   }
   [data-theme="dark"] .diary-spread-left {
     border-bottom-color: #26352B;
   }
 }
 
+.diary-salutation-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 2px;
+}
+
 .diary-salutation {
   font-family: var(--font-base);
-  font-size: 25px;
+  font-size: 26px;
   font-weight: 500;
   color: var(--accent);
   letter-spacing: -0.015em;
-  margin-bottom: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: opacity 0.2s var(--ease);
+}
+
+.diary-salutation:hover {
+  opacity: 0.85;
 }
 
 .diary-intro-body {
   font-family: var(--font-body);
-  font-size: 16.5px;
+  font-size: 16px;
   font-weight: 400;
   line-height: 1.75;
   color: var(--ink);
-  margin-bottom: 24px;
+  margin-bottom: 0;
+}
+
+.diary-intro-stanza {
+  margin-top: 14px;
 }
 
 /* Hand-drawn sage SVG oval ring */
