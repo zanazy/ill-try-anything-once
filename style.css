@@ -2144,29 +2144,28 @@ textarea {
 .hidden-audio-frame,
 #yt-player-target {
   position: fixed !important;
-  top: -9999px !important;
-  left: -9999px !important;
-  width: 200px !important;
-  height: 200px !important;
-  opacity: 0 !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0.001 !important;
   pointer-events: none !important;
-  clip: rect(0, 0, 0, 0) !important;
-  clip-path: inset(50%) !important;
+  border: 0 !important;
+  z-index: -1 !important;
   overflow: hidden !important;
-  z-index: -9999 !important;
 }
 
 #yt-audio-holder iframe,
 .hidden-audio-frame iframe {
   position: fixed !important;
-  top: -9999px !important;
-  left: -9999px !important;
-  width: 200px !important;
-  height: 200px !important;
-  opacity: 0 !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0.001 !important;
   pointer-events: none !important;
   border: 0 !important;
-  z-index: -9999 !important;
+  z-index: -1 !important;
 }
 
 /* ── Direct Audio Box ── */

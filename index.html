@@ -448,8 +448,10 @@
 
       <!-- Real Song Media Container (Audio controls & hidden stream frame) -->
       <div class="mini-player-media" id="mini-player-media">
-        <!-- Hidden YouTube Audio Frame: strictly audio-only, off-screen and invisible -->
-        <div id="yt-audio-holder" class="hidden-audio-frame" style="position:fixed!important;top:-9999px!important;left:-9999px!important;width:200px!important;height:200px!important;opacity:0!important;pointer-events:none!important;clip:rect(0,0,0,0)!important;overflow:hidden!important;z-index:-9999!important;" aria-hidden="true"></div>
+        <!-- Hidden YouTube Audio Frame: strictly audio-only, unobtrusive and mobile-friendly -->
+        <div id="yt-audio-holder" class="hidden-audio-frame" style="position:fixed!important;bottom:0!important;right:0!important;width:1px!important;height:1px!important;opacity:0.001!important;pointer-events:none!important;border:0!important;z-index:-1!important;overflow:hidden!important;" aria-hidden="true">
+          <div id="yt-player-target"></div>
+        </div>
 
         <!-- Direct & Stream Audio Controls -->
         <div class="direct-audio-box" id="direct-audio-box" style="display:none;">
