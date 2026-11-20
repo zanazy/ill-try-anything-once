@@ -2096,16 +2096,7 @@ textarea {
 }
 
 .mini-source-badge {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--accent);
-  background: var(--accent-tint);
-  border: 1px solid var(--border);
-  padding: 1px 6px;
-  border-radius: 6px;
-  flex-shrink: 0;
+  display: none !important;
 }
 
 .mini-player-actions {
