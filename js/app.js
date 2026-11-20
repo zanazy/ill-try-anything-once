@@ -137,11 +137,6 @@ window.ZLog = window.ZLog || {};
     } else {
       document.body.classList.remove('author-mode');
     }
-    // Update seed button visibility if needed
-    const seedContainer = $('#seed-db-container');
-    if (seedContainer && seedContainer.dataset.empty === 'true') {
-      seedContainer.style.display = isAuthed ? 'block' : 'none';
-    }
   }
 
   function showToast(msg) {
@@ -237,13 +232,7 @@ window.ZLog = window.ZLog || {};
   }
 
   async function syncAndRenderPosts() {
-    const res = await Data.fetchLivePosts();
-    const seedContainer = $('#seed-db-container');
-    if (seedContainer) {
-      seedContainer.dataset.empty = res.empty ? 'true' : 'false';
-      const isAuthed = Boolean(currentAuthSession && currentAuthSession.user);
-      seedContainer.style.display = (res.empty && isAuthed) ? 'block' : 'none';
-    }
+    await Data.fetchLivePosts();
     renderFeed();
   }
 
@@ -251,27 +240,6 @@ window.ZLog = window.ZLog || {};
     await Data.fetchLiveStatus();
     renderCurrently();
     fetchLastFmNowPlaying();
-  }
-
-  async function handleSeedDatabase() {
-    const seedBtn = $('#seed-database-btn');
-    if (seedBtn) {
-      seedBtn.disabled = true;
-      seedBtn.textContent = 'Seeding starter entries…';
-    }
-    try {
-      await Data.seedStarterEntries();
-      showToast('Starter entries seeded to Supabase!');
-      await syncAndRenderPosts();
-    } catch (err) {
-      console.error('Seed error:', err);
-      showToast('Error seeding entries: ' + (err.message || 'Check database permissions'));
-    } finally {
-      if (seedBtn) {
-        seedBtn.disabled = false;
-        seedBtn.textContent = 'Seed starter entries to database';
-      }
-    }
   }
 
   /* ═══════════════════════════════════════
@@ -402,13 +370,13 @@ window.ZLog = window.ZLog || {};
     if (entries.length === 0) {
       dom.feedColumn.innerHTML = `
         <div class="empty-state">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            <path d="M8 7h8M8 11h6"/>
+          <svg class="empty-state-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="9" y1="13" x2="15" y2="13"/>
+            <line x1="9" y1="17" x2="13" y2="17"/>
           </svg>
-          <h3>No entries found</h3>
-          <p>No journal entries tagged with "${activeFilter}". Click "Write Entry" to add one.</p>
+          <p class="empty-state-text">Cool beans — nothing written here yet.</p>
         </div>
       `;
       return;
@@ -1273,12 +1241,6 @@ window.ZLog = window.ZLog || {};
     const authorSignoutBtn = $('#author-signout-btn');
     if (authorSignoutBtn) {
       authorSignoutBtn.addEventListener('click', handleAuthorSignOut);
-    }
-
-    // Seed database button
-    const seedDatabaseBtn = $('#seed-database-btn');
-    if (seedDatabaseBtn) {
-      seedDatabaseBtn.addEventListener('click', handleSeedDatabase);
     }
 
     // Download posts.js button (Author only)

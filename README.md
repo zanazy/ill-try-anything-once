@@ -22,7 +22,7 @@ Visual scraps, nocturnal thoughts, and small things keeping me sane.
 - **Supabase Cloud Sync**:
   - Live entries synced to Cloud Postgres (`public.posts`).
   - Live status widget synced to `public.site_status`.
-  - Offline-first resilience with local starter entries fallback.
+  - Real-time cloud sync with offline-first client resilience.
 - **Author Mode**:
   - Clean public view by default (all author controls hidden).
   - Unlocked by triple-clicking the masthead star icon (or pressing `Ctrl/Cmd + Shift + E`) with Supabase Author Authentication.
@@ -33,7 +33,7 @@ Visual scraps, nocturnal thoughts, and small things keeping me sane.
 ```
 ├── index.html        # Main application structure & semantic layout
 ├── style.css         # Botanical green design system & editorial typography
-├── posts.js          # Default starter journal entries (offline/seed fallback)
+├── posts.js          # Exported static publication entries
 ├── js/
 │   ├── app.js        # Core UI controller, filters, modals, and author state
 │   ├── data.js       # Data layer & Supabase live synchronization

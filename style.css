@@ -1788,33 +1788,44 @@ button, input, select, textarea {
   margin-top: 20px;
 }
 
-/* ── Empty State ── */
+/* ── Clean Empty State ── */
 .empty-state {
   text-align: center;
-  padding: 60px 24px;
-  color: var(--ink-muted);
+  padding: 80px 24px;
+  color: #677A6D;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
-.empty-state svg {
-  width: 48px;
-  height: 48px;
-  fill: var(--border-dash);
-  margin-bottom: 16px;
+.empty-state-icon {
+  width: 32px;
+  height: 32px;
+  stroke: #8C9E92;
+  opacity: 0.7;
 }
 
-.empty-state h3 {
+.empty-state-text {
   font-family: var(--font-base);
-  font-size: 20px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 400;
+  color: #677A6D;
+  margin: 0;
+  letter-spacing: 0.01em;
 }
 
-.empty-state p {
-  font-size: 14px;
-  max-width: 320px;
-  margin: 0 auto;
+[data-theme="dark"] .empty-state {
+  color: #93A89A;
+}
+
+[data-theme="dark"] .empty-state-icon {
+  stroke: #6F8576;
+}
+
+[data-theme="dark"] .empty-state-text {
+  color: #93A89A;
 }
 
 /* ── Import/Export Section ── */
