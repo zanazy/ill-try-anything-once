@@ -52,9 +52,43 @@ window.ZLog = window.ZLog || {};
     dom.readerContent   = $('#reader-content');
     dom.readerClose     = $('#reader-close');
     dom.editorOverlay   = $('#editor-overlay');
-    dom.editorForm      = $('#editor-form');
-    dom.editorClose     = $('#editor-close');
-    dom.editorCancel    = $('#editor-cancel');
+    dom.canvasTopbar    = $('#canvas-topbar');
+    dom.canvasBackBtn   = $('#canvas-back-btn');
+    dom.canvasUndoBtn   = $('#canvas-undo-btn');
+    dom.canvasRedoBtn   = $('#canvas-redo-btn');
+    dom.canvasFormatBlock = $('#canvas-format-block');
+    dom.canvasCodeBtn   = $('#canvas-code-btn');
+    dom.canvasHighlightBtn = $('#canvas-highlight-btn');
+    dom.canvasLinkBtn   = $('#canvas-link-btn');
+    dom.canvasImageBtn  = $('#canvas-image-btn');
+    dom.canvasImageInput = $('#canvas-image-input');
+    dom.canvasSoundtrackToggle = $('#canvas-soundtrack-toggle');
+    dom.canvasSoundtrackStrip = $('#canvas-soundtrack-strip');
+    dom.canvasSoundtrackClose = $('#canvas-soundtrack-close');
+    dom.canvasQuoteBtn  = $('#canvas-quote-btn');
+    dom.canvasHrBtn     = $('#canvas-hr-btn');
+    dom.canvasPreviewBtn = $('#canvas-preview-btn');
+    dom.canvasPublishBtn = $('#canvas-publish-btn');
+    dom.canvasScrollBody = $('#canvas-scroll-body');
+    dom.canvasContainer = $('#canvas-container');
+    dom.canvasEditArea  = $('#canvas-edit-area');
+    dom.canvasTitle     = $('#canvas-title');
+    dom.canvasSubtitle  = $('#canvas-subtitle');
+    dom.canvasCategoryTabs = $('#canvas-category-tabs');
+    dom.canvasMdlPreview = $('#canvas-mdl-preview');
+    dom.canvasMdlText   = $('#canvas-mdl-text');
+    dom.canvasTrackUrl  = $('#canvas-track-url');
+    dom.canvasTrackTitle = $('#canvas-track-title');
+    dom.canvasTrackArtist = $('#canvas-track-artist');
+    dom.canvasTrackNote = $('#canvas-track-note');
+    dom.canvasTrackHint = $('#canvas-track-hint');
+    dom.canvasBody      = $('#canvas-body');
+    dom.canvasPreviewArea = $('#canvas-preview-area');
+    dom.canvasPreviewMeta = $('#canvas-preview-meta');
+    dom.canvasPreviewTitle = $('#canvas-preview-title');
+    dom.canvasPreviewSubtitle = $('#canvas-preview-subtitle');
+    dom.canvasPreviewSoundtrack = $('#canvas-preview-soundtrack');
+    dom.canvasPreviewBody = $('#canvas-preview-body');
     dom.writeBtn        = $('#write-btn');
     dom.logoLink        = $('#logo-link');
     dom.themeToggle     = $('#theme-toggle');
@@ -1029,8 +1063,11 @@ window.ZLog = window.ZLog || {};
   }
 
   /* ═══════════════════════════════════════
-     EDITOR & QUICK TAG SYSTEM
+     SUBSTACK-STYLE WRITING CANVAS & QUICK TAGS
      ═══════════════════════════════════════ */
+
+  let selectedCanvasCategory = null;
+  let isCanvasPreviewActive = false;
 
   function getNextMdlNumber() {
     const allEntries = Data.loadEntries();
@@ -1041,106 +1078,84 @@ window.ZLog = window.ZLog || {};
     return String(nextNum).padStart(2, '0');
   }
 
-  function updateEditorQuickTagState() {
-    const checkboxes = $$('#ed-tags .tag-checkbox:checked');
-    const selectedTags = Array.from(checkboxes).map(cb => cb.value);
-    const isMdlChecked = selectedTags.some(t => t.toLowerCase().startsWith('might delete later'));
+  function autoGrowTextarea(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
 
-    const previewBox = $('#mdl-preview-box');
-    const previewText = $('#mdl-preview-text');
-    const titleHint = $('#title-hint');
-    const titleInput = $('#ed-title');
+  function renderCanvasCategoryTabs() {
+    if (!dom.canvasCategoryTabs) return;
+    const categories = Data.TAGS.filter(t => t !== 'All');
+    dom.canvasCategoryTabs.innerHTML = categories.map(cat => {
+      const isSelected = selectedCanvasCategory === cat;
+      return `<button type="button" class="canvas-category-tab ${isSelected ? 'active' : ''}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`;
+    }).join('');
+    updateCanvasCategoryState();
+  }
 
-    if (isMdlChecked) {
+  function updateCanvasCategoryState() {
+    if (!dom.canvasMdlPreview) return;
+    if (selectedCanvasCategory === 'might delete later') {
       const nextNum = getNextMdlNumber();
-      if (previewText) previewText.innerHTML = `Will be published as: <strong>might delete later #${nextNum}</strong>`;
-      if (previewBox) previewBox.style.display = 'flex';
-      if (!titleInput.value) {
-        titleInput.placeholder = `e.g. might delete later #${nextNum} (or leave blank to auto-title)`;
+      if (dom.canvasMdlText) {
+        dom.canvasMdlText.innerHTML = `Will be published as: <strong>might delete later #${nextNum}</strong>`;
+      }
+      dom.canvasMdlPreview.style.display = 'flex';
+      if (!dom.canvasTitle.value) {
+        dom.canvasTitle.placeholder = `e.g. might delete later #${nextNum} (or leave blank to auto-title)`;
       }
     } else {
-      if (previewBox) previewBox.style.display = 'none';
-      if (!titleInput.value) {
-        titleInput.placeholder = "What's on your mind today? (or leave blank for auto-title)";
-      }
-    }
-
-    const hasAutoTitleTag = selectedTags.some(t =>
-      ['might delete later', 'nocturnal thoughts', 'rants', 'brain dump'].includes(t.toLowerCase())
-    );
-
-    if (titleHint) {
-      if (hasAutoTitleTag) {
-        titleHint.textContent = 'Auto-title ready if left blank';
-        titleHint.style.color = 'var(--accent)';
-      } else {
-        titleHint.textContent = 'Optional for quick series';
-        titleHint.style.color = 'var(--ink-muted)';
+      dom.canvasMdlPreview.style.display = 'none';
+      if (!dom.canvasTitle.value) {
+        if (selectedCanvasCategory && ['nocturnal thoughts', 'rants', 'brain dump'].includes(selectedCanvasCategory)) {
+          dom.canvasTitle.placeholder = `e.g. ${selectedCanvasCategory} (or leave blank to auto-title)`;
+        } else {
+          dom.canvasTitle.placeholder = 'Title';
+        }
       }
     }
   }
 
-  function openEditor() {
-    // Render Quick Tag pills
-    const tagsContainer = $('#ed-tags');
-    tagsContainer.innerHTML = Data.TAGS.filter(t => t !== 'All').map(tag => `
-      <input type="checkbox" class="tag-checkbox" id="edt-${tag.replace(/\s+/g,'-')}" value="${tag}">
-      <label class="tag-checkbox-label" for="edt-${tag.replace(/\s+/g,'-')}" data-tag="${tag}">${tag}</label>
-    `).join('');
-
-    // Attach change listener for live preview
-    tagsContainer.removeEventListener('change', updateEditorQuickTagState);
-    tagsContainer.addEventListener('change', updateEditorQuickTagState);
-
-    // Set default date (local date YYYY-MM-DD)
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    $('#ed-date').value = `${y}-${m}-${d}`;
-
-    // Clear fields
-    $('#ed-title').value = '';
-    $('#ed-subtitle').value = '';
-    $('#ed-track-title').value = '';
-    $('#ed-track-artist').value = '';
-    $('#ed-track-note').value = '';
-    $('#ed-track-url').value = '';
-    if (dom.edTrackUrlHint) {
-      dom.edTrackUrlHint.textContent = 'Auto-fills Song Title and Artist when link is pasted';
-      dom.edTrackUrlHint.style.color = 'var(--ink-muted)';
+  function toggleSoundtrackStrip(forceOpen) {
+    if (!dom.canvasSoundtrackStrip) return;
+    const isHidden = dom.canvasSoundtrackStrip.style.display === 'none' || !dom.canvasSoundtrackStrip.style.display;
+    const open = forceOpen !== undefined ? forceOpen : isHidden;
+    dom.canvasSoundtrackStrip.style.display = open ? 'block' : 'none';
+    if (dom.canvasSoundtrackToggle) {
+      dom.canvasSoundtrackToggle.classList.toggle('active', open);
     }
-    $('#ed-body').value = '';
-
-    updateEditorQuickTagState();
-
-    dom.editorOverlay.classList.add('open');
-    editorOpen = true;
-    document.body.style.overflow = 'hidden';
-    setTimeout(() => $('#ed-title').focus(), 300);
+    if (open && dom.canvasTrackUrl) {
+      dom.canvasTrackUrl.focus();
+    }
   }
 
-  function closeEditor() {
-    dom.editorOverlay.classList.remove('open');
-    editorOpen = false;
-    document.body.style.overflow = '';
+  function removeSoundtrackStrip() {
+    if (dom.canvasTrackUrl) dom.canvasTrackUrl.value = '';
+    if (dom.canvasTrackTitle) dom.canvasTrackTitle.value = '';
+    if (dom.canvasTrackArtist) dom.canvasTrackArtist.value = '';
+    if (dom.canvasTrackNote) dom.canvasTrackNote.value = '';
+    if (dom.canvasTrackHint) {
+      dom.canvasTrackHint.textContent = 'Auto-fills Song Title and Artist when link is pasted';
+      dom.canvasTrackHint.style.color = 'var(--ink-muted)';
+    }
+    toggleSoundtrackStrip(false);
   }
 
   /* ── Auto-Fill Song Details via oEmbed / NoEmbed ── */
-  async function handleSongUrlAutoFill() {
-    const urlInput = $('#ed-track-url');
+  async function handleCanvasSongUrlAutoFill() {
+    const urlInput = dom.canvasTrackUrl;
     if (!urlInput) return;
     const rawUrl = urlInput.value.trim();
     if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) return;
 
-    const titleInput = $('#ed-track-title');
-    const artistInput = $('#ed-track-artist');
+    const titleInput = dom.canvasTrackTitle;
+    const artistInput = dom.canvasTrackArtist;
     if (!titleInput || !artistInput) return;
 
-    // Do not overwrite if author already filled both fields
     if (titleInput.value.trim() && artistInput.value.trim()) return;
 
-    const hintEl = dom.edTrackUrlHint || $('#ed-track-url-hint');
+    const hintEl = dom.canvasTrackHint;
     const defaultHint = 'Auto-fills Song Title and Artist when link is pasted';
     if (hintEl) {
       hintEl.textContent = 'Fetching song details…';
@@ -1173,7 +1188,6 @@ window.ZLog = window.ZLog || {};
             const authorName = (data.author_name || '').trim();
             let rawTitle = (data.title || '').trim();
 
-            // Clean common video decorations
             rawTitle = rawTitle.replace(/\s*[\(\[](?:Official\s*(?:Music\s*)?(?:Video|Audio|HD|4K|Remaster|Visualizer|Lyric Video)|Music Video|Lyric Video)[\)\]]/gi, '').trim();
 
             let detectedArtist = authorName;
@@ -1222,48 +1236,255 @@ window.ZLog = window.ZLog || {};
     }
   }
 
-  function handlePublish(e) {
-    e.preventDefault();
+  /* ── Rich-Text Formatting Commands ── */
+  function execCanvasCommand(command, value = null) {
+    if (isCanvasPreviewActive) return;
+    if (!dom.canvasBody) return;
+    dom.canvasBody.focus();
+    document.execCommand(command, false, value);
+  }
 
-    let title = $('#ed-title').value.trim();
+  function handleCanvasCode() {
+    if (isCanvasPreviewActive || !dom.canvasBody) return;
+    dom.canvasBody.focus();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
 
-    // Gather selected Quick Tags
-    const tags = [];
-    $$('#ed-tags .tag-checkbox:checked').forEach(cb => tags.push(cb.value));
+    let parent = sel.anchorNode;
+    while (parent && parent !== dom.canvasBody) {
+      if (parent.nodeName === 'CODE') {
+        const textNode = document.createTextNode(parent.textContent);
+        parent.parentNode.replaceChild(textNode, parent);
+        return;
+      }
+      parent = parent.parentNode;
+    }
+
+    const selectedText = range.toString();
+    if (!selectedText) {
+      const codeEl = document.createElement('code');
+      codeEl.textContent = 'code';
+      range.insertNode(codeEl);
+      return;
+    }
+
+    const codeEl = document.createElement('code');
+    codeEl.textContent = selectedText;
+    range.deleteContents();
+    range.insertNode(codeEl);
+  }
+
+  function handleCanvasHighlight() {
+    if (isCanvasPreviewActive || !dom.canvasBody) return;
+    dom.canvasBody.focus();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+
+    let parent = sel.anchorNode;
+    while (parent && parent !== dom.canvasBody) {
+      if (parent.nodeName === 'MARK' || (parent.classList && parent.classList.contains('matcha-highlight'))) {
+        const textNode = document.createTextNode(parent.textContent);
+        parent.parentNode.replaceChild(textNode, parent);
+        return;
+      }
+      parent = parent.parentNode;
+    }
+
+    const text = range.toString();
+    if (!text) return;
+
+    const mark = document.createElement('mark');
+    mark.className = 'matcha-highlight';
+    mark.textContent = text;
+    range.deleteContents();
+    range.insertNode(mark);
+  }
+
+  function handleCanvasLink() {
+    if (isCanvasPreviewActive || !dom.canvasBody) return;
+    const url = prompt('Enter link URL (https://…):');
+    if (!url) return;
+    const cleanUrl = /^https?:\/\//i.test(url.trim()) ? url.trim() : 'https://' + url.trim();
+    execCanvasCommand('createLink', cleanUrl);
+  }
+
+  function calcReadingMinutes(html) {
+    const text = (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const wordCount = text ? text.split(/\s+/).length : 0;
+    return Math.max(1, Math.round(wordCount / 200));
+  }
+
+  function toggleCanvasPreview() {
+    if (!dom.canvasPreviewArea || !dom.canvasEditArea) return;
+    isCanvasPreviewActive = !isCanvasPreviewActive;
+
+    if (isCanvasPreviewActive) {
+      dom.canvasPreviewBtn.textContent = 'Edit';
+      dom.canvasPreviewBtn.classList.add('active');
+      dom.canvasEditArea.style.display = 'none';
+      dom.canvasPreviewArea.style.display = 'block';
+
+      const cat = selectedCanvasCategory;
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      let catLabel = '';
+      if (cat) {
+        if (cat === 'might delete later') {
+          catLabel = `<span class="reader-category-label">— might delete later #${getNextMdlNumber()}</span> · `;
+        } else {
+          catLabel = `<span class="reader-category-label">— ${escapeHtml(cat)}</span> · `;
+        }
+      }
+      const htmlBody = dom.canvasBody ? dom.canvasBody.innerHTML : '';
+      const readingTime = calcReadingMinutes(htmlBody);
+
+      if (dom.canvasPreviewMeta) {
+        dom.canvasPreviewMeta.innerHTML = `${catLabel}<span>${dateStr}</span> · <span>${readingTime} min read</span>`;
+      }
+
+      let pTitle = dom.canvasTitle ? dom.canvasTitle.value.trim() : '';
+      if (!pTitle && cat) {
+        if (cat === 'might delete later') {
+          pTitle = `might delete later #${getNextMdlNumber()}`;
+        } else if (['nocturnal thoughts', 'rants', 'brain dump'].includes(cat)) {
+          const mDay = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          pTitle = `${cat} — ${mDay}`;
+        }
+      }
+      if (dom.canvasPreviewTitle) {
+        dom.canvasPreviewTitle.textContent = pTitle || 'Untitled Entry';
+      }
+
+      const pSub = dom.canvasSubtitle ? dom.canvasSubtitle.value.trim() : '';
+      if (dom.canvasPreviewSubtitle) {
+        dom.canvasPreviewSubtitle.textContent = pSub;
+        dom.canvasPreviewSubtitle.style.display = pSub ? 'block' : 'none';
+      }
+
+      if (dom.canvasPreviewSoundtrack) {
+        const tTitle = dom.canvasTrackTitle ? dom.canvasTrackTitle.value.trim() : '';
+        const tArtist = dom.canvasTrackArtist ? dom.canvasTrackArtist.value.trim() : '';
+        const tUrl = dom.canvasTrackUrl ? dom.canvasTrackUrl.value.trim() : '';
+        const tNote = dom.canvasTrackNote ? dom.canvasTrackNote.value.trim() : '';
+
+        if (tTitle || tUrl) {
+          dom.canvasPreviewSoundtrack.innerHTML = `
+            <div class="song-pill song-pill--preview" style="cursor:default;">
+              <span class="pill-icon">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+              </span>
+              <span class="pill-title">${escapeHtml(tTitle || 'Soundtrack')}</span>
+              ${tArtist ? `<span class="pill-artist">— ${escapeHtml(tArtist)}</span>` : ''}
+              ${tNote ? `<span class="pill-note" style="opacity:0.75; font-size:11px; margin-left:4px;">(${escapeHtml(tNote)})</span>` : ''}
+            </div>
+          `;
+          dom.canvasPreviewSoundtrack.style.display = 'block';
+        } else {
+          dom.canvasPreviewSoundtrack.style.display = 'none';
+        }
+      }
+
+      if (dom.canvasPreviewBody) {
+        dom.canvasPreviewBody.innerHTML = htmlBody || '<p style="color:var(--ink-muted); font-style:italic;">No writing yet…</p>';
+      }
+
+      if (dom.canvasScrollBody) dom.canvasScrollBody.scrollTop = 0;
+    } else {
+      dom.canvasPreviewBtn.textContent = 'Preview';
+      dom.canvasPreviewBtn.classList.remove('active');
+      dom.canvasEditArea.style.display = 'block';
+      dom.canvasPreviewArea.style.display = 'none';
+      if (dom.canvasBody) dom.canvasBody.focus();
+    }
+  }
+
+  function openEditor() {
+    selectedCanvasCategory = null;
+    isCanvasPreviewActive = false;
+
+    if (dom.canvasTitle) {
+      dom.canvasTitle.value = '';
+      dom.canvasTitle.placeholder = 'Title';
+      dom.canvasTitle.style.height = 'auto';
+    }
+    if (dom.canvasSubtitle) {
+      dom.canvasSubtitle.value = '';
+      dom.canvasSubtitle.placeholder = 'Add a subtitle...';
+      dom.canvasSubtitle.style.height = 'auto';
+    }
+    if (dom.canvasBody) {
+      dom.canvasBody.innerHTML = '';
+    }
+
+    if (dom.canvasTrackUrl) dom.canvasTrackUrl.value = '';
+    if (dom.canvasTrackTitle) dom.canvasTrackTitle.value = '';
+    if (dom.canvasTrackArtist) dom.canvasTrackArtist.value = '';
+    if (dom.canvasTrackNote) dom.canvasTrackNote.value = '';
+    if (dom.canvasTrackHint) {
+      dom.canvasTrackHint.textContent = 'Auto-fills Song Title and Artist when link is pasted';
+      dom.canvasTrackHint.style.color = 'var(--ink-muted)';
+    }
+    if (dom.canvasSoundtrackStrip) dom.canvasSoundtrackStrip.style.display = 'none';
+    if (dom.canvasSoundtrackToggle) dom.canvasSoundtrackToggle.classList.remove('active');
+
+    if (dom.canvasPreviewBtn) {
+      dom.canvasPreviewBtn.textContent = 'Preview';
+      dom.canvasPreviewBtn.classList.remove('active');
+    }
+    if (dom.canvasEditArea) dom.canvasEditArea.style.display = 'block';
+    if (dom.canvasPreviewArea) dom.canvasPreviewArea.style.display = 'none';
+
+    renderCanvasCategoryTabs();
+
+    dom.editorOverlay.classList.add('open');
+    editorOpen = true;
+    document.body.style.overflow = 'hidden';
+
+    setTimeout(() => {
+      if (dom.canvasTitle) dom.canvasTitle.focus();
+    }, 200);
+  }
+
+  function closeEditor() {
+    dom.editorOverlay.classList.remove('open');
+    editorOpen = false;
+    document.body.style.overflow = '';
+  }
+
+  function handleCanvasPublish() {
+    let title = dom.canvasTitle ? dom.canvasTitle.value.trim() : '';
 
     // Smart Blank-Title Fallback
     if (!title) {
-      const dateVal = $('#ed-date').value || new Date().toISOString().slice(0, 10);
-      let monthDay = 'Today';
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
-        const [y, m, d] = dateVal.split('-').map(Number);
-        monthDay = new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      }
+      const now = new Date();
+      const monthDay = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-      const hasTag = (tagStr) => tags.some(t => t.toLowerCase() === tagStr.toLowerCase());
-
-      if (hasTag('might delete later')) {
+      if (selectedCanvasCategory === 'might delete later') {
         const nextNum = getNextMdlNumber();
         title = `might delete later #${nextNum}`;
-      } else if (hasTag('nocturnal thoughts')) {
+      } else if (selectedCanvasCategory === 'nocturnal thoughts') {
         title = `nocturnal thoughts — ${monthDay}`;
-      } else if (hasTag('rants')) {
+      } else if (selectedCanvasCategory === 'rants') {
         title = `rants — ${monthDay}`;
-      } else if (hasTag('brain dump')) {
+      } else if (selectedCanvasCategory === 'brain dump') {
         title = `brain dump — ${monthDay}`;
       } else {
         alert('Please enter a title, or pick a Quick Tag (might delete later, nocturnal thoughts, rants, brain dump) for an automatic editorial title.');
-        $('#ed-title').focus();
+        if (isCanvasPreviewActive) toggleCanvasPreview();
+        if (dom.canvasTitle) dom.canvasTitle.focus();
         return;
       }
     }
 
-    // Build soundtrack object (Real song playback)
+    const tags = selectedCanvasCategory ? [selectedCanvasCategory] : [];
+
     let soundtrack = null;
-    const trackTitle = $('#ed-track-title').value.trim();
-    const trackArtist = $('#ed-track-artist').value.trim();
-    const trackNote = $('#ed-track-note').value.trim();
-    const trackUrl = $('#ed-track-url').value.trim();
+    const trackTitle = dom.canvasTrackTitle ? dom.canvasTrackTitle.value.trim() : '';
+    const trackArtist = dom.canvasTrackArtist ? dom.canvasTrackArtist.value.trim() : '';
+    const trackNote = dom.canvasTrackNote ? dom.canvasTrackNote.value.trim() : '';
+    const trackUrl = dom.canvasTrackUrl ? dom.canvasTrackUrl.value.trim() : '';
     if (trackTitle || trackUrl) {
       soundtrack = {
         title: trackTitle || 'Soundtrack',
@@ -1273,30 +1494,40 @@ window.ZLog = window.ZLog || {};
       };
     }
 
-    // Process body — auto-wrap in <p> tags
-    let rawBody = $('#ed-body').value.trim();
-    if (rawBody && !rawBody.includes('<p>')) {
-      rawBody = rawBody.split(/\n{2,}/).map(para => {
-        para = para.trim();
-        if (para.startsWith('<blockquote>') || para.startsWith('<figure>')) return para;
-        return `<p>${para}</p>`;
-      }).join('\n\n');
+    let rawBody = dom.canvasBody ? dom.canvasBody.innerHTML.trim() : '';
+    if (!rawBody || rawBody === '<br>') {
+      alert('Please write something in your entry before publishing.');
+      if (isCanvasPreviewActive) toggleCanvasPreview();
+      if (dom.canvasBody) dom.canvasBody.focus();
+      return;
     }
 
-    // Pick a random cover gradient
+    // Wrap plain lines in <p> if missing block markup
+    if (!/<(p|h2|h3|blockquote|ul|ol|figure|div)/i.test(rawBody)) {
+      rawBody = rawBody.split(/\n{2,}/).map(para => `<p>${para.trim()}</p>`).join('\n\n');
+    }
+
+    const readingTime = calcReadingMinutes(rawBody);
     const gradients = Data.coverGradients;
     const coverGradient = gradients[Math.floor(Math.random() * gradients.length)];
+    const dateVal = new Date().toISOString().slice(0, 10);
 
     const entry = {
       title,
-      subtitle: $('#ed-subtitle').value.trim(),
-      date: $('#ed-date').value,
+      subtitle: dom.canvasSubtitle ? dom.canvasSubtitle.value.trim() : '',
+      date: dateVal,
       tags,
       soundtrack,
       song_url: trackUrl || null,
       body: rawBody,
-      coverGradient
+      coverGradient,
+      readingTime: readingTime,
+      reading_time: readingTime
     };
+
+    const publishBtnSpan = dom.canvasPublishBtn ? dom.canvasPublishBtn.querySelector('span') : null;
+    if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = true;
+    if (publishBtnSpan) publishBtnSpan.textContent = 'Publishing…';
 
     Data.insertLivePost(entry).then(() => {
       closeEditor();
@@ -1308,6 +1539,9 @@ window.ZLog = window.ZLog || {};
       closeEditor();
       renderFeed();
       showToast('Entry saved locally.');
+    }).finally(() => {
+      if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = false;
+      if (publishBtnSpan) publishBtnSpan.textContent = 'Publish';
     });
   }
 
@@ -1554,6 +1788,181 @@ window.ZLog = window.ZLog || {};
     }
   }
 
+  function initCanvasEvents() {
+    // Write Entry button opens canvas
+    if (dom.writeBtn) {
+      dom.writeBtn.addEventListener('click', openEditor);
+    }
+
+    // Topbar back button
+    if (dom.canvasBackBtn) {
+      dom.canvasBackBtn.addEventListener('click', closeEditor);
+    }
+
+    // Undo / Redo
+    if (dom.canvasUndoBtn) {
+      dom.canvasUndoBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        execCanvasCommand('undo');
+      });
+    }
+    if (dom.canvasRedoBtn) {
+      dom.canvasRedoBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        execCanvasCommand('redo');
+      });
+    }
+
+    // Style dropdown (Body, Heading 2, Heading 3)
+    if (dom.canvasFormatBlock) {
+      dom.canvasFormatBlock.addEventListener('change', () => {
+        const val = dom.canvasFormatBlock.value;
+        execCanvasCommand('formatBlock', '<' + val + '>');
+      });
+    }
+
+    // Direct command buttons (bold, italic, strikeThrough, lists)
+    $$('.canvas-format-btn[data-command]').forEach(btn => {
+      btn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const cmd = btn.dataset.command;
+        execCanvasCommand(cmd);
+      });
+    });
+
+    // Inline Code
+    if (dom.canvasCodeBtn) {
+      dom.canvasCodeBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        handleCanvasCode();
+      });
+    }
+
+    // Matcha Highlight
+    if (dom.canvasHighlightBtn) {
+      dom.canvasHighlightBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        handleCanvasHighlight();
+      });
+    }
+
+    // Link
+    if (dom.canvasLinkBtn) {
+      dom.canvasLinkBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        handleCanvasLink();
+      });
+    }
+
+    // Image Upload / URL
+    if (dom.canvasImageBtn) {
+      dom.canvasImageBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (isCanvasPreviewActive) return;
+        const choice = confirm('Click OK to upload an image from your device, or Cancel to paste an image URL.');
+        if (choice) {
+          if (dom.canvasImageInput) dom.canvasImageInput.click();
+        } else {
+          const url = prompt('Enter image URL:');
+          if (url && url.trim()) {
+            execCanvasCommand('insertImage', url.trim());
+          }
+        }
+      });
+    }
+
+    if (dom.canvasImageInput) {
+      dom.canvasImageInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          execCanvasCommand('insertImage', event.target.result);
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+      });
+    }
+
+    // Soundtrack toggle & remove
+    if (dom.canvasSoundtrackToggle) {
+      dom.canvasSoundtrackToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleSoundtrackStrip();
+      });
+    }
+    if (dom.canvasSoundtrackClose) {
+      dom.canvasSoundtrackClose.addEventListener('click', (e) => {
+        e.preventDefault();
+        removeSoundtrackStrip();
+      });
+    }
+
+    // Blockquote
+    if (dom.canvasQuoteBtn) {
+      dom.canvasQuoteBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        execCanvasCommand('formatBlock', '<blockquote>');
+      });
+    }
+
+    // Section Divider
+    if (dom.canvasHrBtn) {
+      dom.canvasHrBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        execCanvasCommand('insertHorizontalRule');
+      });
+    }
+
+    // Preview button
+    if (dom.canvasPreviewBtn) {
+      dom.canvasPreviewBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleCanvasPreview();
+      });
+    }
+
+    // Publish button
+    if (dom.canvasPublishBtn) {
+      dom.canvasPublishBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleCanvasPublish();
+      });
+    }
+
+    // Auto-grow textareas
+    if (dom.canvasTitle) {
+      dom.canvasTitle.addEventListener('input', () => autoGrowTextarea(dom.canvasTitle));
+    }
+    if (dom.canvasSubtitle) {
+      dom.canvasSubtitle.addEventListener('input', () => autoGrowTextarea(dom.canvasSubtitle));
+    }
+
+    // Category Tabs click
+    if (dom.canvasCategoryTabs) {
+      dom.canvasCategoryTabs.addEventListener('click', (e) => {
+        const tab = e.target.closest('.canvas-category-tab');
+        if (!tab) return;
+        const cat = tab.dataset.category;
+        if (selectedCanvasCategory === cat) {
+          selectedCanvasCategory = null;
+        } else {
+          selectedCanvasCategory = cat;
+        }
+        renderCanvasCategoryTabs();
+      });
+    }
+
+    // Soundtrack URL auto-fill
+    if (dom.canvasTrackUrl) {
+      dom.canvasTrackUrl.addEventListener('blur', handleCanvasSongUrlAutoFill);
+      dom.canvasTrackUrl.addEventListener('change', handleCanvasSongUrlAutoFill);
+      dom.canvasTrackUrl.addEventListener('paste', () => {
+        setTimeout(handleCanvasSongUrlAutoFill, 80);
+      });
+    }
+  }
+
   /* ═══════════════════════════════════════
      EVENT BINDING
      ═══════════════════════════════════════ */
@@ -1581,18 +1990,8 @@ window.ZLog = window.ZLog || {};
     // Reader
     dom.readerClose.addEventListener('click', closeReader);
 
-    // Editor
-    dom.writeBtn.addEventListener('click', openEditor);
-    dom.editorClose.addEventListener('click', closeEditor);
-    dom.editorCancel.addEventListener('click', closeEditor);
-    dom.editorForm.addEventListener('submit', handlePublish);
-    if (dom.edTrackUrl) {
-      dom.edTrackUrl.addEventListener('blur', handleSongUrlAutoFill);
-      dom.edTrackUrl.addEventListener('change', handleSongUrlAutoFill);
-      dom.edTrackUrl.addEventListener('paste', () => {
-        setTimeout(handleSongUrlAutoFill, 80);
-      });
-    }
+    // Editorial Substack Canvas
+    initCanvasEvents();
 
     // Status modal
     dom.editStatusBtn.addEventListener('click', openStatusModal);
