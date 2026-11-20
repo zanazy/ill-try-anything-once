@@ -44,13 +44,20 @@ window.ZLog = window.ZLog || {};
   const dom = {};
 
   function cacheDom() {
+    dom.landingView     = $('#landing-view');
+    dom.singleEntryView = $('#single-entry-view');
+    dom.indexToggleBtn  = $('#index-toggle-btn');
+    dom.indexSlideover  = $('#index-slideover');
+    dom.indexCloseBtn   = $('#index-close-btn');
+    dom.indexBackdrop   = $('#index-backdrop');
+    dom.indexNav        = $('#index-nav');
     dom.filterBar       = $('#index-nav') || $('#filter-bar');
     dom.feedColumn      = $('#feed-column');
     dom.sidebarColumn   = $('#sidebar-column');
     dom.currentlyItems  = $('#currently-items');
-    dom.readerOverlay   = $('#reader-overlay');
-    dom.readerContent   = $('#reader-content');
-    dom.readerClose     = $('#reader-close');
+    dom.readerOverlay   = $('#reader-overlay') || $('#single-entry-view');
+    dom.readerContent   = $('#reader-content') || $('#single-entry-view');
+    dom.readerClose     = $('#reader-close') || $('#single-entry-back-btn');
     dom.editorOverlay   = $('#editor-overlay');
     dom.canvasTopbar    = $('#canvas-topbar');
     dom.canvasBackBtn   = $('#canvas-back-btn');
@@ -121,6 +128,9 @@ window.ZLog = window.ZLog || {};
     dom.exportBtn       = $('#export-btn');
     dom.importInput     = $('#import-input');
     dom.progressBar     = $('#reading-progress');
+    dom.authorSignoutBtn = $('#author-signout-btn');
+    dom.smTally         = $('#sm-tally');
+    dom.runningDate     = $('#diary-running-date');
   }
 
   function escapeHtml(str) {
@@ -279,11 +289,11 @@ window.ZLog = window.ZLog || {};
   }
 
   function updateAuthorState(session) {
-    const isAuthed = Boolean(session && session.user);
+    const isAuthed = Boolean((session && session.user) || Data.isAuthorMode());
     if (isAuthed) {
       document.body.classList.add('author-mode');
       const emailEl = $('#author-session-email');
-      if (emailEl) emailEl.textContent = session.user.email;
+      if (emailEl) emailEl.textContent = (session && session.user && session.user.email) ? session.user.email : 'Author Mode Active';
     } else {
       document.body.classList.remove('author-mode');
     }
@@ -304,7 +314,7 @@ window.ZLog = window.ZLog || {};
     const modal = $('#author-modal');
     if (!modal) return;
 
-    const isAuthed = Boolean(currentAuthSession && currentAuthSession.user);
+    const isAuthed = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
     const loginForm = $('#author-login-form');
     const sessionPanel = $('#author-session-panel');
     const errorEl = $('#author-login-error');
@@ -317,7 +327,7 @@ window.ZLog = window.ZLog || {};
       if (loginForm) loginForm.style.display = 'none';
       if (sessionPanel) sessionPanel.style.display = 'block';
       const emailEl = $('#author-session-email');
-      if (emailEl) emailEl.textContent = currentAuthSession.user.email;
+      if (emailEl) emailEl.textContent = (currentAuthSession && currentAuthSession.user) ? currentAuthSession.user.email : 'Author Mode Active';
     } else {
       if (loginForm) loginForm.style.display = 'block';
       if (sessionPanel) sessionPanel.style.display = 'none';
@@ -354,7 +364,9 @@ window.ZLog = window.ZLog || {};
     if (errorEl) errorEl.textContent = '';
 
     try {
-      await Data.signInAuthor(email, password);
+      const session = await Data.signInAuthor(email, password);
+      currentAuthSession = session;
+      updateAuthorState(session);
       closeAuthorModal();
       showToast('Signed in as Author.');
       await syncAndRenderPosts();
@@ -454,12 +466,34 @@ window.ZLog = window.ZLog || {};
     }).join('');
   }
 
+  function openIndexSlideover() {
+    if (dom.indexSlideover) dom.indexSlideover.classList.add('open');
+    if (dom.indexBackdrop) dom.indexBackdrop.classList.add('open');
+  }
+
+  function closeIndexSlideover() {
+    if (dom.indexSlideover) dom.indexSlideover.classList.remove('open');
+    if (dom.indexBackdrop) dom.indexBackdrop.classList.remove('open');
+  }
+
+  function toggleIndexSlideover() {
+    if (!dom.indexSlideover) return;
+    if (dom.indexSlideover.classList.contains('open')) {
+      closeIndexSlideover();
+    } else {
+      openIndexSlideover();
+    }
+  }
+
   function handleFilterClick(e) {
     const item = e.target.closest('.index-nav-item, .filter-nav-btn, .filter-pill');
     if (!item) return;
     activeFilter = item.dataset.tag;
     renderFilters();
+    closeIndexSlideover();
+    if (readerOpen) closeReader();
     renderFeed();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   /* ═══════════════════════════════════════
@@ -520,7 +554,13 @@ window.ZLog = window.ZLog || {};
     ).join('');
 
     return `
-      <article class="entry-card" data-entry-id="${entry.id}">
+      <article class="diary-paper-slip entry-card" data-entry-id="${entry.id}">
+        <!-- V-notched botanical sage ribbon bookmark on top-right corner -->
+        <div class="ribbon-bookmark" aria-hidden="true">
+          <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+            <path d="M0 0 H16 V22 L8 16 L0 22 Z" fill="#537E60"/>
+          </svg>
+        </div>
         <div class="entry-meta">
           <span>${formatDate(entry.date || entry.createdAt)}</span>
           <span class="dot"></span>
@@ -543,7 +583,12 @@ window.ZLog = window.ZLog || {};
 
     if (entries.length === 0) {
       dom.feedColumn.innerHTML = `
-        <div class="empty-state">
+        <div class="diary-paper-slip empty-state">
+          <div class="ribbon-bookmark" aria-hidden="true">
+            <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+              <path d="M0 0 H16 V22 L8 16 L0 22 Z" fill="#537E60"/>
+            </svg>
+          </div>
           <svg class="empty-state-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
@@ -687,7 +732,7 @@ window.ZLog = window.ZLog || {};
     const status = Data.loadStatus();
 
     // Determine On Repeat / Now Playing / Last Played state
-    let musicLabelHtml = `${ICONS.disc} on repeat`;
+    let musicTagText = 'ON REPEAT';
     let musicTitle = 'Where’s My Love';
     let musicArtist = 'SYML';
     let musicDisplay = 'Where’s My Love — SYML';
@@ -701,9 +746,9 @@ window.ZLog = window.ZLog || {};
       musicUrl = latestLiveTrack.url || null;
 
       if (latestLiveTrack.nowPlaying) {
-        musicLabelHtml = `${ICONS.waveform} now playing <span class="pulse-dot" title="Live scrobble from Last.fm"></span>`;
+        musicTagText = 'NOW PLAYING';
       } else {
-        musicLabelHtml = `${ICONS.disc} last played`;
+        musicTagText = 'LAST PLAYED';
       }
     } else {
       // Fallback to manual entry from status
@@ -738,33 +783,45 @@ window.ZLog = window.ZLog || {};
       ? ` <a href="${musicUrl}" target="_blank" rel="noopener noreferrer" class="currently-link-icon" title="Open track link">${ICONS.externalLink}</a>`
       : '';
 
-    dom.currentlyItems.innerHTML = `
-      <div class="currently-item">
-        <div class="currently-label">${ICONS.book} reading</div>
-        <div class="currently-value">${escapeHtml(status.reading || 'The Creative Act — Rick Rubin')}</div>
-      </div>
-      <div class="currently-item">
-        <div class="currently-label">${musicLabelHtml}</div>
-        <div class="currently-value">
-          <span class="currently-value-text clickable" id="currently-play"
-                data-title="${escapeHtml(musicTitle)}"
-                data-artist="${escapeHtml(musicArtist)}"
-                data-url="${musicUrl || ''}"
-                data-external="${isExternalUrl ? 'true' : 'false'}"
-                title="${isExternalUrl ? 'Open link in new tab' : 'Play ambient audio'}">
-            ${escapeHtml(musicDisplay)}
-          </span>${linkIconHtml}
+    if (dom.currentlyItems) {
+      dom.currentlyItems.innerHTML = `
+        <div class="currently-row">
+          <span class="currently-tag">READING</span>
+          <span class="currently-text">${escapeHtml(status.reading || 'The Creative Act — Rick Rubin')}</span>
         </div>
-      </div>
-      <div class="currently-item">
-        <div class="currently-label">${ICONS.yarn} crafting</div>
-        <div class="currently-value">${escapeHtml(status.crafting || 'Chunky knit pouch with sage yarn')}</div>
-      </div>
-      <div class="currently-item">
-        <div class="currently-label">${ICONS.star} daydreaming of</div>
-        <div class="currently-value">${escapeHtml(status.daydreaming || 'Quiet greenhouse afternoons & sunlit ceramic cups')}</div>
-      </div>
-    `;
+        <div class="currently-row">
+          <div class="currently-tag-group">
+            <span class="currently-tag">${musicTagText}</span>
+            <span class="cassette-badge" title="Cassette tape">${ICONS.cassette}</span>
+            <svg class="hand-drawn-arrow" width="22" height="12" viewBox="0 0 28 16" fill="none" aria-hidden="true">
+              <path d="M2 13 C 10 14, 18 10, 24 4 M 18 3 L 25 4 L 23 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="currently-text">
+            <span class="currently-value-text clickable" id="currently-play"
+                  data-title="${escapeHtml(musicTitle)}"
+                  data-artist="${escapeHtml(musicArtist)}"
+                  data-url="${musicUrl || ''}"
+                  data-external="${isExternalUrl ? 'true' : 'false'}"
+                  title="${isExternalUrl ? 'Open link in new tab' : 'Play ambient audio'}">
+              ${escapeHtml(musicDisplay)}
+            </span>${linkIconHtml}
+          </div>
+        </div>
+        <div class="currently-row">
+          <span class="currently-tag">CRAFTING</span>
+          <span class="currently-text">${escapeHtml(status.crafting || 'Chunky knit pouch with sage yarn')}</span>
+        </div>
+        <div class="currently-row">
+          <span class="currently-tag">DAYDREAMING OF</span>
+          <span class="currently-text">${escapeHtml(status.daydreaming || 'Quiet greenhouse afternoons & sunlit ceramic cups')}</span>
+        </div>
+        <div class="currently-row">
+          <span class="currently-tag">DAILY TALLY</span>
+          <span class="currently-text">${escapeHtml(status.dailyTally || '3 cups of genmaicha · 1 completed puzzle · 4,200 steps')}</span>
+        </div>
+      `;
+    }
   }
 
   /* ═══════════════════════════════════════
@@ -777,6 +834,7 @@ window.ZLog = window.ZLog || {};
     $('#sm-repeat').value      = status.onRepeat || '';
     $('#sm-crafting').value    = status.crafting || '';
     $('#sm-daydreaming').value = status.daydreaming || '';
+    if ($('#sm-tally')) $('#sm-tally').value = status.dailyTally || '';
 
     const lfm = Data.loadLastFm();
     if ($('#sm-lastfm-user')) $('#sm-lastfm-user').value = lfm.username || '';
@@ -798,6 +856,7 @@ window.ZLog = window.ZLog || {};
     const onRepeat = $('#sm-repeat').value.trim();
     const crafting = $('#sm-crafting').value.trim();
     const daydreaming = $('#sm-daydreaming').value.trim();
+    const dailyTally = $('#sm-tally') ? $('#sm-tally').value.trim() : '';
 
     const lastfmUser = $('#sm-lastfm-user') ? $('#sm-lastfm-user').value.trim() : '';
     const lastfmApiKey = $('#sm-lastfm-key') ? $('#sm-lastfm-key').value.trim() : '';
@@ -807,6 +866,7 @@ window.ZLog = window.ZLog || {};
       onRepeat:     onRepeat || 'Where’s My Love — SYML',
       crafting:     crafting,
       daydreaming:  daydreaming,
+      dailyTally:   dailyTally || '3 cups of genmaicha · 1 completed puzzle · 4,200 steps',
       lastfmUser:   lastfmUser,
       lastfmApiKey: lastfmApiKey
     };
@@ -893,7 +953,7 @@ window.ZLog = window.ZLog || {};
      READER VIEW
      ═══════════════════════════════════════ */
 
-  function openReader(entryId) {
+  function openReader(entryId, updateHash = true) {
     const allEntries = Data.loadEntries();
     const entry = allEntries.find(e => e.id === entryId);
     if (!entry) return;
@@ -968,38 +1028,62 @@ window.ZLog = window.ZLog || {};
       body = body.split('\n\n').map(p => `<p>${p.trim()}</p>`).join('\n');
     }
 
-    dom.readerContent.innerHTML = `
-      <div class="reader-header">
+    const singleContainer = dom.singleEntryView || dom.readerContent;
+    if (singleContainer) {
+      singleContainer.dataset.currentEntryId = entry.id;
+      singleContainer.innerHTML = `
+        <div class="single-entry-topbar">
+          <button type="button" class="entry-back-btn" id="single-entry-back-btn" title="Back to entries">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Back</span>
+          </button>
+          <div class="single-entry-topbar-meta">
+            <span style="font-size:12px;color:var(--ink-muted);font-style:italic;">I’ll Try Anything Once</span>
+          </div>
+        </div>
+
         <div class="entry-meta">
           <span>${formatDate(entry.date || entry.createdAt)}</span>
           <span class="dot"></span>
           <span>${entry.readingTime || '?'} min read</span>
           ${tagsMetaHtml}
         </div>
-        <h1>${entry.title}</h1>
-        ${entry.subtitle ? `<p class="reader-subtitle">${entry.subtitle}</p>` : ''}
-      </div>
 
-      ${soundtrackHtml}
+        <h1 class="single-entry-title">${entry.title}</h1>
+        ${entry.subtitle ? `<p class="single-entry-subtitle">${entry.subtitle}</p>` : ''}
 
-      <hr class="stitch-divider">
+        ${soundtrackHtml}
 
-      <div class="reader-body">${body}</div>
+        <hr class="stitch-divider">
 
-      <div class="reader-footer-actions">
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <span style="font-size:12px;color:var(--ink-muted);font-style:italic;">I’ll Try Anything Once</span>
-          <span class="author-badge" style="font-size:11px; padding:2px 8px;">sonic diary</span>
+        <div class="reader-body">${body}</div>
+
+        <div class="reader-footer-actions">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span style="font-size:12px;color:var(--ink-muted);font-style:italic;">I’ll Try Anything Once</span>
+          </div>
+          <button class="reader-delete-btn author-only" id="reader-delete-btn" data-id="${entry.id}">
+            Erase from memory?
+          </button>
         </div>
-        <button class="reader-delete-btn author-only" id="reader-delete-btn" data-id="${entry.id}">
-          Erase from memory?
-        </button>
-      </div>
-    `;
+      `;
+    }
 
-    dom.readerOverlay.classList.add('open');
+    if (dom.landingView) dom.landingView.style.display = 'none';
+    if (dom.singleEntryView) dom.singleEntryView.style.display = 'block';
     readerOpen = true;
-    document.body.style.overflow = 'hidden';
+
+    if (updateHash) {
+      window.location.hash = 'post-' + entry.id;
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Back button
+    const backBtn = $('#single-entry-back-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => closeReader());
+    }
 
     // Delete button inside reader (Author only)
     const deleteBtn = $('#reader-delete-btn');
@@ -1027,10 +1111,6 @@ window.ZLog = window.ZLog || {};
         }
       });
     }
-
-    // Scroll tracking for progress bar
-    dom.readerOverlay.addEventListener('scroll', updateReadingProgress);
-    dom.progressBar.style.width = '0%';
   }
 
   function updateReaderPlayState(track) {
@@ -1045,19 +1125,46 @@ window.ZLog = window.ZLog || {};
     }
   }
 
-  function closeReader() {
-    dom.readerOverlay.classList.remove('open');
+  function closeReader(updateHash = true) {
+    if (dom.singleEntryView) {
+      dom.singleEntryView.style.display = 'none';
+      dom.singleEntryView.dataset.currentEntryId = '';
+      dom.singleEntryView.innerHTML = '';
+    }
+    if (dom.landingView) {
+      dom.landingView.style.display = 'block';
+    }
     readerOpen = false;
-    document.body.style.overflow = '';
-    dom.progressBar.style.width = '0%';
-    dom.readerOverlay.removeEventListener('scroll', updateReadingProgress);
+    if (dom.progressBar) dom.progressBar.style.width = '0%';
+
+    if (updateHash && window.location.hash.startsWith('#post-')) {
+      history.pushState(null, '', window.location.pathname + window.location.search);
+    }
+  }
+
+  function handleHashRouting() {
+    const hash = window.location.hash;
+    if (hash.startsWith('#post-')) {
+      const id = hash.replace('#post-', '');
+      const currentId = dom.singleEntryView ? dom.singleEntryView.dataset.currentEntryId : null;
+      if (!readerOpen || currentId !== id) {
+        openReader(id, false);
+      }
+    } else {
+      if (readerOpen) {
+        closeReader(false);
+      }
+    }
   }
 
   function updateReadingProgress() {
-    const el = dom.readerOverlay;
-    const scrollTop = el.scrollTop;
-    const scrollHeight = el.scrollHeight - el.clientHeight;
-    if (scrollHeight <= 0) return;
+    if (!readerOpen || !dom.progressBar) return;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+    if (scrollHeight <= 0) {
+      dom.progressBar.style.width = '0%';
+      return;
+    }
     const pct = Math.min(100, (scrollTop / scrollHeight) * 100);
     dom.progressBar.style.width = pct + '%';
   }
@@ -1984,11 +2091,30 @@ window.ZLog = window.ZLog || {};
     // Filters
     dom.filterBar.addEventListener('click', handleFilterClick);
 
+    // Index Slide-Over Drawer
+    if (dom.indexToggleBtn) {
+      dom.indexToggleBtn.addEventListener('click', toggleIndexSlideover);
+    }
+    if (dom.indexCloseBtn) {
+      dom.indexCloseBtn.addEventListener('click', closeIndexSlideover);
+    }
+    if (dom.indexBackdrop) {
+      dom.indexBackdrop.addEventListener('click', closeIndexSlideover);
+    }
+
     // Feed
     dom.feedColumn.addEventListener('click', handleFeedClick);
 
-    // Reader
-    dom.readerClose.addEventListener('click', closeReader);
+    // Reader close (if legacy button exists)
+    if (dom.readerClose) {
+      dom.readerClose.addEventListener('click', () => closeReader());
+    }
+
+    // Hash routing for deep-links & browser back/forward
+    window.addEventListener('hashchange', handleHashRouting);
+
+    // Window scroll for reading progress bar
+    window.addEventListener('scroll', updateReadingProgress);
 
     // Editorial Substack Canvas
     initCanvasEvents();
@@ -2026,7 +2152,9 @@ window.ZLog = window.ZLog || {};
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if ($('#author-modal') && $('#author-modal').classList.contains('open')) {
+        if (dom.indexSlideover && dom.indexSlideover.classList.contains('open')) {
+          closeIndexSlideover();
+        } else if ($('#author-modal') && $('#author-modal').classList.contains('open')) {
           closeAuthorModal();
         } else if (dom.statusModal.classList.contains('open')) {
           closeStatusModal();
@@ -2128,6 +2256,14 @@ window.ZLog = window.ZLog || {};
     });
   }
 
+  function updateRunningHeaderDate() {
+    if (!dom.runningDate) return;
+    const now = new Date();
+    const month = now.toLocaleString('en-US', { month: 'long' }).toUpperCase();
+    const year = String(now.getFullYear()).slice(-2);
+    dom.runningDate.textContent = `${month} ’${year}`;
+  }
+
   /* ═══════════════════════════════════════
      INIT
      ═══════════════════════════════════════ */
@@ -2135,6 +2271,7 @@ window.ZLog = window.ZLog || {};
   async function init() {
     cacheDom();
     initTheme();
+    updateRunningHeaderDate();
     renderFilters();
     renderFeed();
     renderCurrently();
@@ -2143,6 +2280,7 @@ window.ZLog = window.ZLog || {};
     await initAuthorAuth();
     await syncAndRenderPosts();
     await syncLiveStatus();
+    handleHashRouting();
 
     console.log(
       '%c[demo tape] I’ll Try Anything Once %c— live Supabase connected',

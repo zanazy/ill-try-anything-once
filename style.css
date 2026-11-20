@@ -531,143 +531,566 @@ button, input, select, textarea {
   color: #8CC29B;
 }
 
-/* ── Main Layout ── */
-.main-layout {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px 120px;
-  display: flex;
-  align-items: flex-start;
-  gap: 40px;
+/* ═══════════════════════════════════════
+   OPEN GRAPH-PAPER DIARY SPREAD
+   ═══════════════════════════════════════ */
+
+/* ── Graph-Paper Diary Container ── */
+.diary-notebook {
+  max-width: 920px;
+  margin: 36px auto 100px;
+  width: calc(100% - 32px);
+  background-color: #FAFDF8;
+  background-image: 
+    linear-gradient(to right, #EDF3E8 1px, transparent 1px),
+    linear-gradient(to bottom, #EDF3E8 1px, transparent 1px);
+  background-size: 24px 24px;
+  border-radius: 28px;
+  border: 1px solid #DCE5D5;
+  box-shadow: 0 16px 40px -12px rgba(30, 46, 36, 0.08), 0 4px 16px rgba(30, 46, 36, 0.03);
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.feed-column {
-  flex: 1;
-  min-width: 0;
-}
-
-.sidebar-column {
-  width: var(--sidebar-width);
-  max-width: 340px;
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow: var(--shadow-sm);
-  transition: background 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
-}
-
-.sidebar-column:focus,
-.sidebar-column:active,
-.sidebar-column:focus-visible {
-  outline: none !important;
-  border-color: var(--border) !important;
-}
-
-[data-theme="dark"] .sidebar-column:focus,
-[data-theme="dark"] .sidebar-column:active,
-[data-theme="dark"] .sidebar-column:focus-visible {
-  outline: none !important;
-  border-color: #26352B !important;
-}
-
-[data-theme="dark"] .sidebar-column {
-  background: rgba(27, 39, 31, 0.82);
+[data-theme="dark"] .diary-notebook {
+  background-color: #142018;
+  background-image: 
+    linear-gradient(to right, rgba(38, 53, 43, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(38, 53, 43, 0.6) 1px, transparent 1px);
   border-color: #26352B;
+  box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.5);
 }
 
-/* ── Stitch Divider ── */
-.stitch-divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 20px 0;
-}
-
-/* ── Zee's Author Card (Section in Unified Sidebar) ── */
-.author-card.dream-card {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  margin-bottom: 0;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  transition: none;
-}
-
-.author-card.dream-card:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: transparent;
-}
-
-.author-header {
+/* ── Running Notebook Top Bar ── */
+.diary-running-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid #E5EDE0;
+  background: rgba(250, 253, 248, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 30;
+  gap: 16px;
 }
 
-.author-name {
+[data-theme="dark"] .diary-running-header {
+  background: rgba(20, 32, 24, 0.94);
+  border-bottom-color: #26352B;
+}
+
+.diary-date-stamp {
   font-family: var(--font-base);
-  font-style: normal;
-  font-size: 21px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.diary-running-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-base);
+  font-size: 15px;
   font-weight: 600;
   color: var(--ink);
+  text-decoration: none;
   letter-spacing: -0.01em;
+  transition: color 0.15s ease;
 }
 
-.author-quote {
-  font-family: var(--font-base);
-  font-size: 14.5px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 1.65;
-  color: var(--ink-muted);
+.diary-running-title:hover {
+  color: var(--accent);
 }
 
-/* ── Currently Widget (Section in Unified Sidebar) ── */
-.currently-card {
-  font-family: var(--font-base);
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 0;
-  margin-bottom: 0;
+.sage-sparkle-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  cursor: pointer;
+  transition: transform 0.25s var(--ease);
+  flex-shrink: 0;
+}
+
+.diary-running-title:hover .sage-sparkle-icon {
+  transform: rotate(18deg) scale(1.15);
+}
+
+/* ── Top Spread ("Dear Diary" & Paperclipped Currently) ── */
+.diary-top-spread {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   position: relative;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
-.currently-card h4 {
+@media (max-width: 768px) {
+  .diary-top-spread {
+    grid-template-columns: 1fr;
+  }
+}
+
+.diary-spread-left {
+  padding: 38px 36px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  box-shadow: inset -12px 0 18px -14px rgba(30, 46, 36, 0.08);
+  border-right: 1px solid rgba(220, 229, 213, 0.6);
+}
+
+[data-theme="dark"] .diary-spread-left {
+  box-shadow: inset -12px 0 18px -14px rgba(0, 0, 0, 0.35);
+  border-right-color: rgba(38, 53, 43, 0.6);
+}
+
+@media (max-width: 768px) {
+  .diary-spread-left {
+    border-right: none;
+    border-bottom: 1px solid #E5EDE0;
+    box-shadow: none;
+    padding: 28px 24px 24px;
+  }
+  [data-theme="dark"] .diary-spread-left {
+    border-bottom-color: #26352B;
+  }
+}
+
+.diary-salutation {
   font-family: var(--font-base);
-  font-size: 11px;
+  font-size: 25px;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  color: var(--ink-muted);
-  margin-bottom: 14px;
+  color: var(--accent);
+  letter-spacing: -0.015em;
+  margin-bottom: 16px;
+}
+
+.diary-intro-body {
+  font-family: var(--font-base);
+  font-size: 16.5px;
+  font-weight: 400;
+  line-height: 1.75;
+  color: var(--ink);
+  margin-bottom: 24px;
+}
+
+/* Hand-drawn sage SVG oval ring */
+.circled-phrase {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 0 4px;
+}
+
+.hand-drawn-oval {
+  position: absolute;
+  top: -6px;
+  left: -8px;
+  width: calc(100% + 16px);
+  height: calc(100% + 12px);
+  pointer-events: none;
+}
+
+.diary-spread-author {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.currently-item {
-  margin-bottom: 12px;
-}
-
-.currently-item:last-child {
-  margin-bottom: 0;
-}
-
-.currently-label {
+.diary-author-signoff {
   font-family: var(--font-base);
-  font-size: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  letter-spacing: 0.01em;
+}
+
+/* ── Paperclipped "CURRENTLY" Scrap ── */
+.diary-spread-right {
+  padding: 34px 34px 34px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .diary-spread-right {
+    padding: 28px 20px 32px;
+  }
+}
+
+.currently-scrap {
+  width: 100%;
+  max-width: 380px;
+  background: #FFFFFF;
+  border: 1px solid #DCE5D5;
+  border-radius: 12px;
+  padding: 22px 24px 20px;
+  transform: rotate(0.75deg);
+  box-shadow: 0 10px 24px -6px rgba(30, 46, 36, 0.08), 0 2px 6px rgba(30, 46, 36, 0.03);
+  position: relative;
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.currently-scrap:hover {
+  transform: rotate(0deg);
+  box-shadow: 0 14px 28px -6px rgba(30, 46, 36, 0.12);
+}
+
+[data-theme="dark"] .currently-scrap {
+  background: #1C2B21;
+  border-color: #26352B;
+  box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.4);
+}
+
+.paperclip-badge {
+  position: absolute;
+  top: -18px;
+  right: 28px;
+  z-index: 5;
+  filter: drop-shadow(0 2px 3px rgba(30, 46, 36, 0.15));
+}
+
+.currently-scrap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #EEF3EA;
+  padding-bottom: 8px;
+}
+
+[data-theme="dark"] .currently-scrap-header {
+  border-bottom-color: #26352B;
+}
+
+.currently-scrap-title {
+  font-family: var(--font-base);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.currently-scrap-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.currently-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-base);
+}
+
+.currently-tag {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+}
+
+.currently-tag-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cassette-badge {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+.hand-drawn-arrow {
+  stroke: var(--accent);
+  vertical-align: middle;
+}
+
+.currently-text {
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.currently-value-text.clickable {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.currently-value-text.clickable:hover {
+  color: var(--accent);
+}
+
+/* ── Divider Across Notebook Page ── */
+.diary-divider {
+  border: none;
+  border-top: 1px solid #E5EDE0;
+  margin: 0;
+}
+
+[data-theme="dark"] .diary-divider {
+  border-top-color: #26352B;
+}
+
+/* ── Bottom Journal Entries Section ── */
+.diary-entries-section {
+  padding: 34px 36px 64px;
+}
+
+@media (max-width: 768px) {
+  .diary-entries-section {
+    padding: 26px 18px 48px;
+  }
+}
+
+.diary-entries-header {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.diary-entries-kicker {
+  font-family: var(--font-base);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+/* ── Stacked Loose Diary Paper Slips ── */
+.diary-papers-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.diary-paper-slip {
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid #DCE5D5;
+  border-radius: 18px 18px 12px 12px;
+  padding: 26px 32px 24px;
+  box-shadow: 0 4px 14px -3px rgba(30, 46, 36, 0.05);
+  cursor: pointer;
+  transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease);
+}
+
+.diary-paper-slip:nth-child(even) {
+  background: #F7FAF4;
+}
+
+.diary-paper-slip:not(:first-child) {
+  margin-top: -10px;
+}
+
+.diary-paper-slip:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -6px rgba(30, 46, 36, 0.1);
+  z-index: 10;
+}
+
+[data-theme="dark"] .diary-paper-slip {
+  background: #1C2B21;
+  border-color: #26352B;
+  box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .diary-paper-slip:nth-child(even) {
+  background: #18251C;
+}
+
+.ribbon-bookmark {
+  position: absolute;
+  top: 0;
+  right: 28px;
+  width: 18px;
+  height: 26px;
+  z-index: 2;
+  filter: drop-shadow(0 2px 3px rgba(30, 46, 36, 0.15));
+  transition: transform 0.2s var(--ease);
+}
+
+.diary-paper-slip:hover .ribbon-bookmark {
+  transform: translateY(-2px);
+}
+
+.diary-paper-slip.empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  margin-top: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Dedicated Single-Entry Reader Page ── */
+.single-entry-view {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 36px 36px 80px;
+  width: 100%;
+  animation: fadeIn 0.25s ease;
+}
+
+@media (max-width: 768px) {
+  .single-entry-view {
+    padding: 24px 18px 60px;
+  }
+}
+
+.single-entry-topbar {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.entry-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-family: var(--font-base);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.entry-back-btn:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+  background: var(--surface-soft);
+  transform: translateX(-2px);
+}
+
+.single-entry-title {
+  font-family: var(--font-base);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  margin: 12px 0 8px;
+}
+
+.single-entry-subtitle {
+  font-family: var(--font-base);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--ink-muted);
+  margin-bottom: 24px;
+}
+
+/* ── Slide-Over Index Drawer ── */
+.index-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 46, 36, 0.2);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 450;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.index-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.index-slideover {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 288px;
+  max-width: calc(100vw - 32px);
+  z-index: 460;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  overflow-y: auto;
+  background: rgba(250, 253, 248, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-left: 1px solid #DCE5D5;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: -8px 0 32px rgba(30, 46, 36, 0.08);
+}
+
+.index-slideover.open {
+  transform: translateX(0);
+}
+
+[data-theme="dark"] .index-slideover {
+  background: rgba(20, 32, 24, 0.96);
+  border-left-color: #26352B;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.45);
+}
+
+.index-slideover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.index-slideover-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-base);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.index-slideover-close {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.index-slideover-close:hover {
+  color: var(--ink);
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.01em;

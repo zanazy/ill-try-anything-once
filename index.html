@@ -38,35 +38,39 @@
   <!-- Reading Progress Bar -->
   <div id="reading-progress"></div>
 
-  <!-- ═══════════ HEADER ═══════════ -->
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="site-masthead-wrapper">
-        <a href="#" class="site-logo" id="logo-link">
-          <!-- Sleeping Ginger Cat Silhouette SVG Mark -->
-          <svg class="cat-mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 22c0-5 3-9 7-10l-2-6c0-1 1-2 2-1l4 4 4-4c1-1 2 0 2 1l-2 6c4 1 7 5 7 10 0 3-2 5-5 5H11c-3 0-5-2-5-5z"/>
-            <circle cx="13" cy="19" r="1.2" fill="var(--bg)"/>
-            <circle cx="19" cy="19" r="1.2" fill="var(--bg)"/>
-            <ellipse cx="16" cy="21" rx="1.5" ry="0.8" fill="var(--bg)"/>
-          </svg>
-          <div class="masthead-text-group">
-            <div class="masthead-title-row">
-              <span class="logo-text">I’ll Try Anything Once</span>
-              <!-- Minimal Sage Geometric Star SVG (Triple-click unlocks Author Mode) -->
-              <svg class="sage-sparkle-icon" id="masthead-sparkle" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" role="button" tabindex="0" aria-label="Author access" title="✦">
-                <path d="M8 0C8.3 4 12 7.7 16 8C12 8.3 8.3 12 8 16C7.7 12 4 8.3 0 8C4 7.7 7.7 4 8 0Z" fill="currentColor"/>
-              </svg>
-            </div>
-          </div>
-        </a>
-      </div>
+  <!-- ═══════════ OPEN GRAPH-PAPER DIARY NOTEBOOK ═══════════ -->
+  <main class="diary-notebook" id="main-layout">
 
+    <!-- Running Notebook Top Bar -->
+    <header class="diary-running-header" id="diary-running-header">
+      <!-- Left: Current Month / Year -->
+      <div class="diary-date-stamp" id="diary-running-date">NOVEMBER ’26</div>
+
+      <!-- Center: Title with 4-point Star -->
+      <a href="#" class="diary-running-title" id="logo-link">
+        <span class="diary-title-text">I’ll Try Anything Once</span>
+        <!-- Minimal Sage Geometric Star SVG (Triple-click unlocks Author Mode) -->
+        <svg class="sage-sparkle-icon" id="masthead-sparkle" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" role="button" tabindex="0" aria-label="Author access" title="✦">
+          <path d="M8 0C8.3 4 12 7.7 16 8C12 8.3 8.3 12 8 16C7.7 12 4 8.3 0 8C4 7.7 7.7 4 8 0Z" fill="currentColor"/>
+        </svg>
+      </a>
+
+      <!-- Right: Actions -->
       <div class="header-actions">
         <!-- Author Mode Sign Out Pill (Visible only in Author Mode) -->
         <button class="author-mode-pill author-only" id="author-signout-btn" title="Sign out of Author Mode">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           <span>Sign Out</span>
+        </button>
+
+        <!-- Index Drawer Toggle Button -->
+        <button class="btn btn-ghost" id="index-toggle-btn" title="Toggle Category Index" aria-label="Toggle category index sidebar">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="15" y2="12"/>
+            <line x1="3" y1="18" x2="18" y2="18"/>
+          </svg>
+          <span class="btn-label">Index</span>
         </button>
 
         <!-- Theme Toggle -->
@@ -84,108 +88,127 @@
           <span class="btn-label">Write Entry</span>
         </button>
       </div>
+    </header>
+
+    <!-- ═══════════ LANDING PAGE DIARY SPREAD ═══════════ -->
+    <div class="landing-view" id="landing-view">
+
+      <!-- "Dear Diary" Intro & Paperclipped "CURRENTLY" Scrap (Top Section) -->
+      <section class="diary-top-spread" id="diary-top-spread">
+        
+        <!-- Left Side: Dear diary & Zee's note with hand-drawn sage circle -->
+        <div class="diary-spread-left">
+          <div class="diary-salutation">Dear diary,</div>
+          <p class="diary-intro-body">
+            Half-formed essays, nocturnal thoughts, knitted afternoons, and
+            <span class="circled-phrase">
+              songs I keep on repeat
+              <svg class="hand-drawn-oval" viewBox="0 0 220 54" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M 6 27 C 12 7, 206 5, 214 26 C 218 39, 18 52, 9 38 C 4 30, 78 8, 140 12" stroke="#537E60" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+              </svg>
+            </span>.
+          </p>
+          <div class="diary-spread-author">
+            <span class="diary-author-signoff">Hi, I’m Zee</span>
+          </div>
+        </div>
+
+        <!-- Right Side: Paperclipped "CURRENTLY" Scrap -->
+        <div class="diary-spread-right">
+          <div class="currently-scrap" id="currently-card">
+            <!-- Minimal monochrome sage SVG paperclip pinned at top -->
+            <div class="paperclip-badge" aria-hidden="true">
+              <svg width="22" height="42" viewBox="0 0 24 48" fill="none" stroke="#537E60" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M 7 14 L 7 36 C 7 41, 17 41, 17 36 L 17 8 C 17 4, 11 4, 11 8 L 11 34 C 11 37, 14 37, 14 34 L 14 13"/>
+              </svg>
+            </div>
+
+            <div class="currently-scrap-header">
+              <span class="currently-scrap-title">CURRENTLY</span>
+              <button class="edit-status-btn author-only" id="edit-status-btn" title="Edit Currently status">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <span>Edit</span>
+              </button>
+            </div>
+
+            <div id="currently-items" class="currently-scrap-items">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Horizontal Divider Rule across notebook page -->
+      <hr class="diary-divider">
+
+      <!-- Stacked Diary Papers with Bookmarks (Bottom Journal Entries List) -->
+      <section class="diary-entries-section">
+        <div class="diary-entries-header">
+          <span class="diary-entries-kicker">JOURNAL ENTRIES</span>
+        </div>
+        <div class="diary-papers-stack" id="feed-column" aria-label="Journal entries">
+          <!-- Stacked paper slips rendered by JS -->
+        </div>
+      </section>
+
     </div>
-  </header>
 
-  <!-- ═══════════ MAIN LAYOUT ═══════════ -->
-  <main class="main-layout" id="main-layout">
+    <!-- ═══════════ DEDICATED SINGLE-ENTRY READER PAGE ═══════════ -->
+    <article class="single-entry-view" id="single-entry-view" style="display:none;" aria-label="Article view">
+      <!-- Rendered dynamically by JS when an entry is opened -->
+    </article>
 
-    <!-- Feed Column -->
-    <section class="feed-column" id="feed-column" aria-label="Journal entries">
-      <!-- Entry cards rendered by JS -->
-    </section>
-
-    <!-- Sidebar Column -->
-    <aside class="sidebar-column" id="sidebar-column">
-
-      <!-- Zee's Dreamy Author Card -->
-      <div class="author-card dream-card">
-        <div class="author-header">
-          <h3 class="author-name">Hi, I’m Zee</h3>
-        </div>
-        <p class="author-quote">
-          “Half-formed essays, nocturnal thoughts, knitted afternoons, and songs I keep on repeat.”
-        </p>
-      </div>
-
-      <hr class="stitch-divider">
-
-      <!-- Currently Status Widget -->
-      <div class="currently-card" id="currently-card">
-        <h4>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/>
-            <circle cx="6" cy="6" r="1.5" fill="currentColor"/>
-          </svg>
-          Currently
-        </h4>
-        <button class="edit-status-btn author-only" id="edit-status-btn">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          <span>Edit</span>
-        </button>
-        <div id="currently-items">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-
-      <hr class="stitch-divider">
-
-      <!-- Category Index Widget (Editorial Table of Contents) -->
-      <div class="index-card" id="index-card">
-        <h4>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="8" y1="6" x2="21" y2="6"/>
-            <line x1="8" y1="12" x2="21" y2="12"/>
-            <line x1="8" y1="18" x2="21" y2="18"/>
-            <line x1="3" y1="6" x2="3.01" y2="6"/>
-            <line x1="3" y1="12" x2="3.01" y2="12"/>
-            <line x1="3" y1="18" x2="3.01" y2="18"/>
-          </svg>
-          Index
-        </h4>
-        <nav class="index-nav" id="index-nav" aria-label="Table of contents category index">
-          <!-- Rendered by JS -->
-        </nav>
-      </div>
-
-      <hr class="stitch-divider author-only">
-
-      <!-- Author & Publishing Tools (Author Only) -->
-      <div class="data-tools author-only">
-        <h4>Author &amp; Publishing Tools</h4>
-        <div class="data-tools-actions">
-          <button class="btn btn-primary" id="download-posts-js-btn" style="font-size:12px; width:100%; justify-content:center;" title="Download posts.js to deploy to your static hosting">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Download posts.js</span>
-          </button>
-        </div>
-        <p class="data-tools-hint">Drop into your project folder &amp; redeploy to publish new entries to all visitors.</p>
-
-        <div class="data-tools-actions" style="margin-top:10px;">
-          <button class="btn" id="export-btn" style="font-size:11.5px; flex:1;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>Export Backup</span>
-          </button>
-          <label class="btn" style="font-size:11.5px; cursor:pointer; flex:1; text-align:center;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <span>Import</span>
-            <input type="file" accept=".json" id="import-input" style="display:none;">
-          </label>
-        </div>
-      </div>
-
-    </aside>
   </main>
 
-  <!-- ═══════════ READER OVERLAY ═══════════ -->
-  <div class="reader-overlay" id="reader-overlay" role="dialog" aria-modal="true" aria-label="Article reader">
-    <button class="reader-close" id="reader-close" aria-label="Close reader">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-    <article class="reader-content" id="reader-content">
+  <!-- ═══════════ SLIDE-OVER INDEX DRAWER ═══════════ -->
+  <div class="index-backdrop" id="index-backdrop" aria-hidden="true"></div>
+  <aside class="index-slideover" id="index-slideover" aria-label="Category Index Sidebar">
+    <div class="index-slideover-header">
+      <div class="index-slideover-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        <span>Index</span>
+      </div>
+      <button type="button" class="index-slideover-close" id="index-close-btn" aria-label="Close index sidebar" title="Close (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <nav class="index-nav" id="index-nav" aria-label="Table of contents category index">
       <!-- Rendered by JS -->
-    </article>
-  </div>
+    </nav>
+
+    <!-- Author & Publishing Tools (Author Only) -->
+    <div class="data-tools author-only">
+      <h4>Author &amp; Publishing Tools</h4>
+      <div class="data-tools-actions">
+        <button class="btn btn-primary" id="download-posts-js-btn" style="font-size:12px; width:100%; justify-content:center;" title="Download posts.js to deploy to your static hosting">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Download posts.js</span>
+        </button>
+      </div>
+      <p class="data-tools-hint">Drop into your project folder &amp; redeploy to publish new entries to all visitors.</p>
+
+      <div class="data-tools-actions" style="margin-top:10px;">
+        <button class="btn" id="export-btn" style="font-size:11.5px; flex:1;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Export Backup</span>
+        </button>
+        <label class="btn" style="font-size:11.5px; cursor:pointer; flex:1; text-align:center;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Import</span>
+          <input type="file" accept=".json" id="import-input" style="display:none;">
+        </label>
+      </div>
+    </div>
+  </aside>
 
   <!-- ═══════════ FULL-PAGE SUBSTACK WRITING CANVAS ═══════════ -->
   <div class="editor-overlay" id="editor-overlay" role="dialog" aria-modal="true" aria-label="Editorial writing canvas">
@@ -366,6 +389,10 @@
         <div>
           <label for="sm-daydreaming">Daydreaming of</label>
           <input type="text" id="sm-daydreaming" placeholder="e.g., quiet greenhouse afternoons &amp; sunlit ceramic cups">
+        </div>
+        <div>
+          <label for="sm-tally">Daily Tally</label>
+          <input type="text" id="sm-tally" placeholder="e.g., 3 cups of genmaicha · 1 completed puzzle · 4,200 steps">
         </div>
 
         <!-- Connect Last.fm Section -->
