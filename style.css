@@ -4,8 +4,8 @@
    stitch-line dividers, zine aesthetics
    ═══════════════════════════════════════════ */
 
-/* ── Google Fonts import: Fredoka (300, 400, 500, 600) & Space Mono ── */
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+/* ── Google Fonts import: Fredoka, Nunito & Space Mono ── */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600&family=Nunito:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 
 /* ── CSS Custom Properties ── */
 :root {
@@ -17,11 +17,13 @@
   --border:      #DEE7D7;
   --border-dash: #DEE7D7;
 
-  /* Typography — Fredoka across the entire application */
+  /* Typography — Fredoka for headings & branding, Nunito for body text */
+  --font-heading:    'Fredoka', -apple-system, sans-serif;
+  --font-body:       'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-base:       'Fredoka', -apple-system, sans-serif;
-  --font-serif:      'Fredoka', -apple-system, sans-serif;
-  --font-newsreader: 'Fredoka', -apple-system, sans-serif;
-  --font-sans:       'Fredoka', -apple-system, sans-serif;
+  --font-serif:      'Nunito', -apple-system, sans-serif;
+  --font-newsreader: 'Nunito', -apple-system, sans-serif;
+  --font-sans:       'Nunito', -apple-system, sans-serif;
   --font-mono:       'Space Mono', 'SF Mono', Consolas, monospace;
 
   /* Ink Colors */
@@ -128,10 +130,10 @@ html {
 }
 
 body {
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-weight: 400;
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 15.5px;
+  line-height: 1.65;
   color: var(--ink);
   background: var(--bg);
   transition: background 0.4s var(--ease), color 0.4s var(--ease);
@@ -141,14 +143,22 @@ body {
   width: 100%;
 }
 
+p {
+  font-family: var(--font-body);
+}
+
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-base);
+  font-family: var(--font-heading);
   font-weight: 500;
   letter-spacing: -0.01em;
 }
 
-button, input, select, textarea {
-  font-family: var(--font-base);
+button, input, select {
+  font-family: var(--font-heading);
+}
+
+textarea {
+  font-family: var(--font-body);
 }
 
 /* ── Reading Progress Bar ── */
@@ -672,7 +682,7 @@ button, input, select, textarea {
 }
 
 .diary-intro-body {
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-size: 16.5px;
   font-weight: 400;
   line-height: 1.75;
@@ -820,6 +830,7 @@ button, input, select, textarea {
 }
 
 .currently-text {
+  font-family: var(--font-body);
   font-size: 13.5px;
   font-weight: 400;
   color: var(--ink);
@@ -994,7 +1005,7 @@ button, input, select, textarea {
 }
 
 .single-entry-subtitle {
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-size: 19px;
   font-weight: 400;
   line-height: 1.5;
@@ -1414,8 +1425,8 @@ button, input, select, textarea {
 }
 
 .entry-card .entry-subtitle {
-  font-family: var(--font-base);
-  font-size: 14px;
+  font-family: var(--font-body);
+  font-size: 14.5px;
   font-weight: 400;
   color: var(--ink-muted);
   line-height: 1.5;
@@ -1876,7 +1887,7 @@ button, input, select, textarea {
 
 /* ── Reader Body Typography ── */
 .reader-body {
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-size: 17.5px;
   font-weight: 400;
   line-height: 1.8;
@@ -1886,14 +1897,14 @@ button, input, select, textarea {
 }
 
 .reader-body p {
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-weight: 400;
   line-height: 1.8;
   margin-bottom: 1.6em;
 }
 
 .reader-body p:first-of-type::first-letter {
-  font-family: var(--font-base);
+  font-family: var(--font-heading);
   font-size: 3.2em;
   float: left;
   line-height: 0.85;
@@ -1904,7 +1915,7 @@ button, input, select, textarea {
 }
 
 .reader-body blockquote {
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-style: normal;
   font-weight: 400;
   font-size: 17px;
@@ -2395,7 +2406,7 @@ button, input, select, textarea {
 
 .canvas-subtitle-input {
   width: 100%;
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-size: 20px;
   font-weight: 400;
   line-height: 1.45;
@@ -2547,7 +2558,7 @@ button, input, select, textarea {
 /* Rich-Text Writing Canvas */
 .canvas-body {
   min-height: 420px;
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-size: 18px;
   font-weight: 400;
   line-height: 1.85;
@@ -2564,10 +2575,12 @@ button, input, select, textarea {
 }
 
 .canvas-body p {
+  font-family: var(--font-body);
   margin-bottom: 1.5em;
 }
 
 .canvas-body h2 {
+  font-family: var(--font-heading);
   font-size: 26px;
   font-weight: 600;
   margin: 1.8em 0 0.8em;
@@ -2576,6 +2589,7 @@ button, input, select, textarea {
 }
 
 .canvas-body h3 {
+  font-family: var(--font-heading);
   font-size: 21px;
   font-weight: 500;
   margin: 1.5em 0 0.6em;
@@ -2584,6 +2598,7 @@ button, input, select, textarea {
 }
 
 .canvas-body blockquote {
+  font-family: var(--font-body);
   border-left: 3px solid var(--accent);
   padding: 4px 0 4px 20px;
   color: var(--ink-muted);
@@ -2670,7 +2685,7 @@ button, input, select, textarea {
 }
 
 .canvas-preview-subtitle {
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-size: 19px;
   font-weight: 400;
   line-height: 1.5;
@@ -2844,7 +2859,7 @@ button, input, select, textarea {
 }
 
 .empty-state-text {
-  font-family: var(--font-base);
+  font-family: var(--font-body);
   font-size: 15px;
   font-weight: 400;
   color: #677A6D;
