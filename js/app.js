@@ -113,6 +113,7 @@ window.ZLog = window.ZLog || {};
     dom.miniSourceBadge = $('#mini-source-badge');
     dom.miniCloseBtn    = $('#mini-close-btn');
     dom.miniVolume      = $('#mini-volume');
+    dom.ytAudioHolder   = $('#yt-audio-holder');
     dom.directAudioBox  = $('#direct-audio-box');
     dom.directAudioEl   = $('#direct-audio-element');
     dom.directPlayBtn   = $('#direct-play-btn');
@@ -1653,16 +1654,235 @@ window.ZLog = window.ZLog || {};
   }
 
   /* ═══════════════════════════════════════
-     REAL SONG SOUNDTRACK PLAYER
+     REAL SONG SOUNDTRACK PLAYER (AUDIO-ONLY)
      ═══════════════════════════════════════ */
+
+  let ytAudioPlayer = null;
+  let ytApiReady = false;
+  let isYtAudioPlaying = false;
+  let ytPollTimer = null;
+  let currentYtVideoId = null;
+
+  // Global YouTube IFrame API callback
+  window.onYouTubeIframeAPIReady = function() {
+    ytApiReady = true;
+    if (currentTrack && currentTrack.parsed && currentTrack.parsed.type === 'youtube' && currentTrack.parsed.id) {
+      initYtPlayer(currentTrack.parsed.id);
+    }
+  };
+
+  // Listen for iframe postMessages (handles time updates & state changes seamlessly)
+  window.addEventListener('message', (event) => {
+    if (typeof event.data !== 'string') return;
+    try {
+      const data = JSON.parse(event.data);
+      if (data.event === 'onStateChange') {
+        handleYtState(data.info);
+      } else if (data.event === 'infoDelivery' && data.info) {
+        if (typeof data.info.currentTime === 'number') {
+          const cur = data.info.currentTime;
+          if (dom.audioTimeCurrent) dom.audioTimeCurrent.textContent = formatAudioTime(cur);
+          if (dom.audioScrubber && !dom.audioScrubber._dragging) {
+            dom.audioScrubber.value = cur;
+          }
+        }
+        if (typeof data.info.duration === 'number' && data.info.duration > 0) {
+          const dur = data.info.duration;
+          if (dom.audioTimeTotal) dom.audioTimeTotal.textContent = formatAudioTime(dur);
+          if (dom.audioScrubber) dom.audioScrubber.max = dur;
+        }
+        if (typeof data.info.playerState === 'number') {
+          handleYtState(data.info.playerState);
+        }
+      }
+    } catch (_) {}
+  });
+
+  function handleYtState(state) {
+    // 1 = playing, 2 = paused, 0 = ended, 3 = buffering
+    if (state === 1) {
+      isYtAudioPlaying = true;
+      if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.pause;
+      if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+      startYtProgressPolling();
+      updateAllSoundtrackPills();
+    } else if (state === 2) {
+      isYtAudioPlaying = false;
+      if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
+      if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+      stopYtProgressPolling();
+      updateAllSoundtrackPills();
+    } else if (state === 0) {
+      isYtAudioPlaying = false;
+      if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
+      if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+      stopYtProgressPolling();
+      if (dom.audioScrubber) dom.audioScrubber.value = 0;
+      if (dom.audioTimeCurrent) dom.audioTimeCurrent.textContent = '0:00';
+      updateAllSoundtrackPills();
+    }
+  }
+
+  function handleYtStateChange(event) {
+    if (event && typeof event.data !== 'undefined') {
+      handleYtState(event.data);
+    }
+  }
+
+  function postYtCommand(command, args = []) {
+    if (ytAudioPlayer && typeof ytAudioPlayer[command] === 'function') {
+      try {
+        ytAudioPlayer[command](...args);
+        return;
+      } catch (_) {}
+    }
+    const iframe = dom.ytAudioHolder ? dom.ytAudioHolder.querySelector('iframe') : null;
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: command,
+          args: args
+        }), '*');
+      } catch (_) {}
+    }
+  }
+
+  function startYtProgressPolling() {
+    stopYtProgressPolling();
+    ytPollTimer = setInterval(() => {
+      if (!ytAudioPlayer || typeof ytAudioPlayer.getCurrentTime !== 'function') return;
+      try {
+        const cur = ytAudioPlayer.getCurrentTime() || 0;
+        const dur = ytAudioPlayer.getDuration() || 0;
+        if (dur > 0) {
+          if (dom.audioTimeTotal) dom.audioTimeTotal.textContent = formatAudioTime(dur);
+          if (dom.audioScrubber && !dom.audioScrubber._dragging) {
+            dom.audioScrubber.max = dur;
+            dom.audioScrubber.value = cur;
+          }
+        }
+        if (dom.audioTimeCurrent) dom.audioTimeCurrent.textContent = formatAudioTime(cur);
+      } catch (_) {}
+    }, 400);
+  }
+
+  function stopYtProgressPolling() {
+    if (ytPollTimer) {
+      clearInterval(ytPollTimer);
+      ytPollTimer = null;
+    }
+  }
+
+  function stopYtAudio() {
+    stopYtProgressPolling();
+    isYtAudioPlaying = false;
+    currentYtVideoId = null;
+    postYtCommand('stopVideo');
+    if (dom.ytAudioHolder) {
+      dom.ytAudioHolder.innerHTML = '';
+    }
+    ytAudioPlayer = null;
+  }
+
+  function loadYtAudio(videoId) {
+    currentYtVideoId = videoId;
+    if (dom.audioTimeCurrent) dom.audioTimeCurrent.textContent = '0:00';
+    if (dom.audioTimeTotal) dom.audioTimeTotal.textContent = '0:00';
+    if (dom.audioScrubber) {
+      dom.audioScrubber.value = 0;
+      dom.audioScrubber.max = 100;
+    }
+    if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.pause;
+    if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+
+    if (ytAudioPlayer && typeof ytAudioPlayer.loadVideoById === 'function') {
+      try {
+        ytAudioPlayer.loadVideoById(videoId);
+        ytAudioPlayer.playVideo();
+        if (dom.miniVolume) {
+          ytAudioPlayer.setVolume(Number(dom.miniVolume.value));
+        }
+        return;
+      } catch (e) {
+        console.warn('Error reloading video in existing YT player:', e);
+      }
+    }
+
+    initYtPlayer(videoId);
+  }
+
+  function initYtPlayer(videoId) {
+    if (!dom.ytAudioHolder) return;
+    dom.ytAudioHolder.style.cssText = 'position:fixed!important;top:-9999px!important;left:-9999px!important;width:200px!important;height:200px!important;opacity:0!important;pointer-events:none!important;clip:rect(0,0,0,0)!important;overflow:hidden!important;z-index:-9999!important;';
+    dom.ytAudioHolder.innerHTML = '<div id="yt-player-target" style="position:fixed!important;top:-9999px!important;left:-9999px!important;width:200px!important;height:200px!important;opacity:0!important;pointer-events:none!important;"></div>';
+
+    if (window.YT && window.YT.Player) {
+      try {
+        ytAudioPlayer = new YT.Player('yt-player-target', {
+          height: '200',
+          width: '200',
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            modestbranding: 1,
+            rel: 0,
+            playsinline: 1,
+            origin: window.location.origin
+          },
+          events: {
+            onReady: (event) => {
+              const iframe = dom.ytAudioHolder ? dom.ytAudioHolder.querySelector('iframe') : null;
+              if (iframe) {
+                iframe.style.cssText = 'position:fixed!important;top:-9999px!important;left:-9999px!important;width:200px!important;height:200px!important;opacity:0!important;pointer-events:none!important;border:0!important;z-index:-9999!important;';
+              }
+              try {
+                event.target.playVideo();
+                if (dom.miniVolume) {
+                  event.target.setVolume(Number(dom.miniVolume.value));
+                }
+              } catch (_) {}
+              isYtAudioPlaying = true;
+              if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.pause;
+              if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+              startYtProgressPolling();
+              updateAllSoundtrackPills();
+            },
+            onStateChange: handleYtStateChange,
+            onError: (err) => {
+              console.warn('YouTube Player notice/error:', err);
+            }
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn('Failed to initialize YT.Player, falling back to direct iframe:', err);
+      }
+    }
+
+    // Direct fallback iframe with enablejsapi=1 in hidden holder
+    const fallbackSrc = `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&enablejsapi=1&controls=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`;
+    dom.ytAudioHolder.innerHTML = `<iframe id="yt-player-target" width="200" height="200" src="${fallbackSrc}" frameborder="0" allow="autoplay; encrypted-media" style="position:fixed!important;top:-9999px!important;left:-9999px!important;width:200px!important;height:200px!important;opacity:0!important;pointer-events:none!important;border:0!important;z-index:-9999!important;"></iframe>`;
+    isYtAudioPlaying = true;
+    if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.pause;
+    if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+  }
 
   function isTrackPlaying(soundtrack) {
     if (!currentTrack || !soundtrack) return false;
     const urlA = currentTrack.url || '';
     const urlB = soundtrack.url || '';
     if (urlA && urlB && urlA === urlB) {
-      if (currentTrack.parsed && currentTrack.parsed.type === 'audio' && dom.directAudioEl) {
-        return !dom.directAudioEl.paused;
+      if (currentTrack.parsed) {
+        if (currentTrack.parsed.type === 'audio' && dom.directAudioEl) {
+          return !dom.directAudioEl.paused;
+        }
+        if (currentTrack.parsed.type === 'youtube') {
+          return isYtAudioPlaying;
+        }
       }
       return true;
     }
@@ -1694,8 +1914,22 @@ window.ZLog = window.ZLog || {};
         }
         updateAllSoundtrackPills();
         return;
+      } else if (currentTrack.parsed && currentTrack.parsed.type === 'youtube') {
+        if (isYtAudioPlaying) {
+          postYtCommand('pauseVideo');
+          isYtAudioPlaying = false;
+          if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+          if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
+        } else {
+          postYtCommand('playVideo');
+          isYtAudioPlaying = true;
+          if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+          if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.pause;
+        }
+        updateAllSoundtrackPills();
+        return;
       } else {
-        // Toggle off for iframe track
+        // Toggle off for other embed track
         stopTrack();
         return;
       }
@@ -1720,8 +1954,9 @@ window.ZLog = window.ZLog || {};
     if (dom.miniArtist) dom.miniArtist.textContent = currentTrack.artist;
     if (dom.miniSourceBadge) dom.miniSourceBadge.textContent = parsed.platform;
 
-    // Direct Audio vs Iframe Player
+    // Direct Audio vs YouTube (Audio-Only) vs Iframe Player (Spotify/SoundCloud)
     if (parsed.type === 'audio') {
+      stopYtAudio();
       if (dom.embedIframeBox) {
         dom.embedIframeBox.innerHTML = '';
         dom.embedIframeBox.style.display = 'none';
@@ -1739,8 +1974,22 @@ window.ZLog = window.ZLog || {};
           if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
         });
       }
+    } else if (parsed.type === 'youtube') {
+      // Audio-only mode: NO video frame or thumbnail is ever displayed
+      if (dom.directAudioEl) {
+        dom.directAudioEl.pause();
+        dom.directAudioEl.src = '';
+      }
+      if (dom.embedIframeBox) {
+        dom.embedIframeBox.innerHTML = '';
+        dom.embedIframeBox.style.display = 'none';
+      }
+      if (dom.directAudioBox) dom.directAudioBox.style.display = 'flex';
+
+      loadYtAudio(parsed.id);
     } else {
-      // Pause and clear direct audio
+      // External audio embeds (e.g. Spotify 80px audio player or SoundCloud)
+      stopYtAudio();
       if (dom.directAudioEl) {
         dom.directAudioEl.pause();
         dom.directAudioEl.src = '';
@@ -1748,12 +1997,9 @@ window.ZLog = window.ZLog || {};
       if (dom.directAudioBox) dom.directAudioBox.style.display = 'none';
       if (dom.embedIframeBox) dom.embedIframeBox.style.display = 'block';
 
-      // Render visible iframe at standard compact dimensions
       let iframeHtml = '';
       if (parsed.type === 'spotify') {
         iframeHtml = `<iframe style="border-radius:12px;border:0;display:block;" src="${escapeHtml(parsed.embedUrl)}" width="100%" height="80" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
-      } else if (parsed.type === 'youtube') {
-        iframeHtml = `<iframe width="100%" height="180" src="${escapeHtml(parsed.embedUrl)}" title="${escapeHtml(currentTrack.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="border-radius:12px;border:1px solid var(--border);display:block;"></iframe>`;
       } else if (parsed.type === 'soundcloud') {
         iframeHtml = `<iframe width="100%" height="120" scrolling="no" frameborder="no" allow="autoplay" style="border-radius:12px;border:0;display:block;" src="${escapeHtml(parsed.embedUrl)}"></iframe>`;
       } else {
@@ -1772,23 +2018,61 @@ window.ZLog = window.ZLog || {};
   }
 
   function stopTrack() {
+    stopYtAudio();
     if (dom.directAudioEl) {
       dom.directAudioEl.pause();
       dom.directAudioEl.src = '';
     }
     if (dom.embedIframeBox) {
       dom.embedIframeBox.innerHTML = '';
+      dom.embedIframeBox.style.display = 'none';
+    }
+    if (dom.directAudioBox) {
+      dom.directAudioBox.style.display = 'none';
     }
     if (dom.miniPlayer) dom.miniPlayer.classList.remove('visible');
     if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+    if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
     currentTrack = null;
     updateAllSoundtrackPills();
   }
 
   function toggleTrack(soundtrack) {
     if (isTrackPlaying(soundtrack)) {
+      if (currentTrack && currentTrack.parsed && currentTrack.parsed.type === 'youtube') {
+        postYtCommand('pauseVideo');
+        isYtAudioPlaying = false;
+        if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
+        if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+        updateAllSoundtrackPills();
+        return;
+      }
+      if (currentTrack && currentTrack.parsed && currentTrack.parsed.type === 'audio' && dom.directAudioEl) {
+        dom.directAudioEl.pause();
+        if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
+        if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+        updateAllSoundtrackPills();
+        return;
+      }
       stopTrack();
     } else {
+      if (currentTrack && currentTrack.url === (soundtrack.url || '')) {
+        if (currentTrack.parsed && currentTrack.parsed.type === 'youtube') {
+          postYtCommand('playVideo');
+          isYtAudioPlaying = true;
+          if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.pause;
+          if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+          updateAllSoundtrackPills();
+          return;
+        }
+        if (currentTrack.parsed && currentTrack.parsed.type === 'audio' && dom.directAudioEl) {
+          dom.directAudioEl.play().catch(() => {});
+          if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.pause;
+          if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+          updateAllSoundtrackPills();
+          return;
+        }
+      }
       playTrack(soundtrack);
     }
   }
@@ -1834,35 +2118,51 @@ window.ZLog = window.ZLog || {};
   }
 
   function initDirectAudioEvents() {
-    if (!dom.directAudioEl) return;
+    if (dom.directAudioEl) {
+      dom.directAudioEl.addEventListener('loadedmetadata', () => {
+        if (dom.audioTimeTotal) {
+          dom.audioTimeTotal.textContent = formatAudioTime(dom.directAudioEl.duration);
+        }
+        if (dom.audioScrubber) {
+          dom.audioScrubber.max = dom.directAudioEl.duration || 100;
+          dom.audioScrubber.value = 0;
+        }
+      });
 
-    dom.directAudioEl.addEventListener('loadedmetadata', () => {
-      if (dom.audioTimeTotal) {
-        dom.audioTimeTotal.textContent = formatAudioTime(dom.directAudioEl.duration);
-      }
-      if (dom.audioScrubber) {
-        dom.audioScrubber.max = dom.directAudioEl.duration || 100;
-        dom.audioScrubber.value = 0;
-      }
-    });
+      dom.directAudioEl.addEventListener('timeupdate', () => {
+        if (dom.audioTimeCurrent) {
+          dom.audioTimeCurrent.textContent = formatAudioTime(dom.directAudioEl.currentTime);
+        }
+        if (dom.audioScrubber && !dom.audioScrubber._dragging) {
+          dom.audioScrubber.value = dom.directAudioEl.currentTime;
+        }
+      });
 
-    dom.directAudioEl.addEventListener('timeupdate', () => {
-      if (dom.audioTimeCurrent) {
-        dom.audioTimeCurrent.textContent = formatAudioTime(dom.directAudioEl.currentTime);
-      }
-      if (dom.audioScrubber && !dom.audioScrubber._dragging) {
-        dom.audioScrubber.value = dom.directAudioEl.currentTime;
-      }
-    });
-
-    dom.directAudioEl.addEventListener('ended', () => {
-      if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
-      if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
-      updateAllSoundtrackPills();
-    });
+      dom.directAudioEl.addEventListener('ended', () => {
+        if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
+        if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+        updateAllSoundtrackPills();
+      });
+    }
 
     if (dom.directPlayBtn) {
       dom.directPlayBtn.addEventListener('click', () => {
+        if (currentTrack && currentTrack.parsed && currentTrack.parsed.type === 'youtube') {
+          if (isYtAudioPlaying) {
+            postYtCommand('pauseVideo');
+            isYtAudioPlaying = false;
+            dom.directPlayBtn.innerHTML = ICONS.play;
+            if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+          } else {
+            postYtCommand('playVideo');
+            isYtAudioPlaying = true;
+            dom.directPlayBtn.innerHTML = ICONS.pause;
+            if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+          }
+          updateAllSoundtrackPills();
+          return;
+        }
+
         if (!dom.directAudioEl) return;
         if (dom.directAudioEl.paused) {
           dom.directAudioEl.play().catch(() => {});
@@ -1879,18 +2179,38 @@ window.ZLog = window.ZLog || {};
 
     if (dom.audioScrubber) {
       dom.audioScrubber.addEventListener('mousedown', () => { dom.audioScrubber._dragging = true; });
+      dom.audioScrubber.addEventListener('touchstart', () => { dom.audioScrubber._dragging = true; }, { passive: true });
       dom.audioScrubber.addEventListener('mouseup', () => { dom.audioScrubber._dragging = false; });
+      dom.audioScrubber.addEventListener('touchend', () => { dom.audioScrubber._dragging = false; });
       dom.audioScrubber.addEventListener('input', (e) => {
-        if (dom.directAudioEl) {
-          dom.directAudioEl.currentTime = Number(e.target.value);
+        const val = Number(e.target.value);
+        if (currentTrack && currentTrack.parsed && currentTrack.parsed.type === 'youtube') {
+          postYtCommand('seekTo', [val, true]);
+          if (dom.audioTimeCurrent) dom.audioTimeCurrent.textContent = formatAudioTime(val);
+        } else if (dom.directAudioEl) {
+          dom.directAudioEl.currentTime = val;
+        }
+      });
+      dom.audioScrubber.addEventListener('change', (e) => {
+        dom.audioScrubber._dragging = false;
+        const val = Number(e.target.value);
+        if (currentTrack && currentTrack.parsed && currentTrack.parsed.type === 'youtube') {
+          postYtCommand('seekTo', [val, true]);
+        } else if (dom.directAudioEl) {
+          dom.directAudioEl.currentTime = val;
         }
       });
     }
 
     if (dom.miniVolume) {
       dom.miniVolume.addEventListener('input', (e) => {
-        const vol = Number(e.target.value) / 100;
-        if (dom.directAudioEl) dom.directAudioEl.volume = vol;
+        const volVal = Number(e.target.value);
+        if (currentTrack && currentTrack.parsed && currentTrack.parsed.type === 'youtube') {
+          postYtCommand('setVolume', [volVal]);
+        }
+        if (dom.directAudioEl) {
+          dom.directAudioEl.volume = volVal / 100;
+        }
       });
     }
   }

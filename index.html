@@ -26,6 +26,9 @@
   <!-- Favicon (minimal botanical sage 4-point sparkle inline SVG data URI) -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 C16.5 9 23 15.5 30 16 C23 16.5 16.5 23 16 30 C15.5 23 9 16.5 2 16 C9 15.5 15.5 9 16 2 Z' fill='%23537E60'/%3E%3C/svg%3E">
 
+  <!-- YouTube IFrame API for audio-only playback -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
   <!-- Supabase JS Client v2 from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -499,9 +502,12 @@
         </div>
       </div>
 
-      <!-- Real Song Media Container (Visible iframe / Audio player) -->
+      <!-- Real Song Media Container (Audio controls & hidden stream frame) -->
       <div class="mini-player-media" id="mini-player-media">
-        <!-- Direct Audio Element & Controls -->
+        <!-- Hidden YouTube Audio Frame: strictly audio-only, off-screen and invisible -->
+        <div id="yt-audio-holder" class="hidden-audio-frame" style="position:fixed!important;top:-9999px!important;left:-9999px!important;width:200px!important;height:200px!important;opacity:0!important;pointer-events:none!important;clip:rect(0,0,0,0)!important;overflow:hidden!important;z-index:-9999!important;" aria-hidden="true"></div>
+
+        <!-- Direct & Stream Audio Controls -->
         <div class="direct-audio-box" id="direct-audio-box" style="display:none;">
           <audio id="direct-audio-element" preload="metadata"></audio>
           <div class="direct-audio-controls">
