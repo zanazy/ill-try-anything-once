@@ -537,6 +537,7 @@ button, input, select, textarea {
   margin: 0 auto;
   padding: 32px 24px 120px;
   display: flex;
+  align-items: flex-start;
   gap: 40px;
 }
 
@@ -549,15 +550,7 @@ button, input, select, textarea {
   width: var(--sidebar-width);
   max-width: 340px;
   flex-shrink: 0;
-  position: sticky;
-  top: 100px;
-  align-self: flex-start;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
-  scrollbar-width: none;
 }
-
-.sidebar-column::-webkit-scrollbar { display: none; }
 
 /* ── Stitch Divider ── */
 .stitch-divider {
@@ -1867,8 +1860,6 @@ button, input, select, textarea {
   .sidebar-column {
     width: 100%;
     max-width: 100%;
-    position: static;
-    max-height: none;
     order: 2;
   }
 
