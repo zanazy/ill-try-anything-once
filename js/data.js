@@ -293,7 +293,24 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     if (!row) return null;
     let soundtrack = null;
     if (row.soundtrack) {
-      soundtrack = typeof row.soundtrack === 'string' ? JSON.parse(row.soundtrack) : row.soundtrack;
+      try {
+        soundtrack = typeof row.soundtrack === 'string' ? JSON.parse(row.soundtrack) : row.soundtrack;
+      } catch (e) {
+        soundtrack = null;
+      }
+    }
+    const songUrl = row.song_url || (soundtrack && soundtrack.url) || null;
+    if (soundtrack) {
+      if (songUrl && !soundtrack.url) {
+        soundtrack.url = songUrl;
+      }
+    } else if (songUrl || row.song_title) {
+      soundtrack = {
+        title: row.song_title || '',
+        artist: row.song_artist || '',
+        note: row.song_note || '',
+        url: songUrl
+      };
     }
     let tags = [];
     if (Array.isArray(row.tags)) {
@@ -310,6 +327,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       readingTime: row.reading_time || row.readingTime || 3,
       coverGradient: row.cover_gradient || row.coverGradient || null,
       soundtrack: soundtrack,
+      song_url: songUrl,
       body: row.body || '',
       createdAt: row.created_at || row.createdAt || new Date().toISOString()
     };
@@ -415,6 +433,8 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       return addEntry(entry);
     }
 
+    const songUrl = entry.soundtrack ? (entry.soundtrack.url || null) : (entry.song_url || null);
+
     const row = {
       title: entry.title,
       subtitle: entry.subtitle || '',
@@ -423,20 +443,37 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       reading_time: entry.readingTime || 1,
       cover_gradient: entry.coverGradient || null,
       soundtrack: entry.soundtrack || null,
+      song_url: songUrl,
       body: entry.body || '',
       created_at: entry.createdAt || new Date().toISOString()
     };
 
-    const { data, error } = await sb.from('posts').insert([row]).select();
-    if (error) {
-      console.error('ZLog: Supabase insert post error:', error);
-      throw error;
+    try {
+      const { data, error } = await sb.from('posts').insert([row]).select();
+      if (error) {
+        // If Supabase schema does not have the song_url column yet, retry without song_url
+        if (error.message && error.message.includes('song_url')) {
+          console.warn('ZLog: song_url column not found, falling back to soundtrack json:', error.message);
+          delete row.song_url;
+          const retryRes = await sb.from('posts').insert([row]).select();
+          if (retryRes.error) throw retryRes.error;
+          const created = retryRes.data && retryRes.data[0] ? mapPostRow(retryRes.data[0]) : entry;
+          const current = loadEntries();
+          current.unshift(created);
+          saveEntries(current);
+          return created;
+        }
+        throw error;
+      }
+      const created = data && data[0] ? mapPostRow(data[0]) : entry;
+      const current = loadEntries();
+      current.unshift(created);
+      saveEntries(current);
+      return created;
+    } catch (err) {
+      console.error('ZLog: Supabase insert post error:', err);
+      throw err;
     }
-    const created = data && data[0] ? mapPostRow(data[0]) : entry;
-    const current = loadEntries();
-    current.unshift(created);
-    saveEntries(current);
-    return created;
   }
 
   async function deleteLivePost(id) {

@@ -8,7 +8,7 @@ window.ZLog = window.ZLog || {};
 (function (Z) {
   'use strict';
 
-  const { Data, Synth } = Z;
+  const { Data } = Z;
 
   /* ═══════════════════════════════════════
      MINIMAL 1.5PX STROKE SVG ICONS (currentColor)
@@ -31,7 +31,7 @@ window.ZLog = window.ZLog || {};
 
   /* ── State ── */
   let activeFilter = 'All';
-  let currentTrack = null;   // { title, artist, type, preset, url }
+  let currentTrack = null;   // { title, artist, note, url, parsed }
   let readerOpen = false;
   let editorOpen = false;
   let latestLiveTrack = null; // { title, artist, nowPlaying, url }
@@ -44,37 +44,49 @@ window.ZLog = window.ZLog || {};
   const dom = {};
 
   function cacheDom() {
-    dom.filterBar     = $('#index-nav') || $('#filter-bar');
-    dom.feedColumn    = $('#feed-column');
-    dom.sidebarColumn = $('#sidebar-column');
-    dom.currentlyItems= $('#currently-items');
-    dom.readerOverlay = $('#reader-overlay');
-    dom.readerContent = $('#reader-content');
-    dom.readerClose   = $('#reader-close');
-    dom.editorOverlay = $('#editor-overlay');
-    dom.editorForm    = $('#editor-form');
-    dom.editorClose   = $('#editor-close');
-    dom.editorCancel  = $('#editor-cancel');
-    dom.writeBtn      = $('#write-btn');
-    dom.logoLink      = $('#logo-link');
-    dom.themeToggle   = $('#theme-toggle');
-    dom.themeIcon     = $('#theme-icon');
-    dom.statusModal   = $('#status-modal');
-    dom.editStatusBtn = $('#edit-status-btn');
-    dom.smLastfmUser  = $('#sm-lastfm-user');
-    dom.smLastfmKey   = $('#sm-lastfm-key');
-    dom.smLastfmTest  = $('#sm-lastfm-test');
-    dom.smLastfmStatus= $('#sm-lastfm-status');
-    dom.miniPlayer    = $('#mini-player');
-    dom.miniVinyl     = $('#mini-vinyl');
-    dom.miniTitle     = $('#mini-title');
-    dom.miniArtist    = $('#mini-artist');
-    dom.miniPlayBtn   = $('#mini-play-btn');
-    dom.miniCloseBtn  = $('#mini-close-btn');
-    dom.miniVolume    = $('#mini-volume');
-    dom.exportBtn     = $('#export-btn');
-    dom.importInput   = $('#import-input');
-    dom.progressBar   = $('#reading-progress');
+    dom.filterBar       = $('#index-nav') || $('#filter-bar');
+    dom.feedColumn      = $('#feed-column');
+    dom.sidebarColumn   = $('#sidebar-column');
+    dom.currentlyItems  = $('#currently-items');
+    dom.readerOverlay   = $('#reader-overlay');
+    dom.readerContent   = $('#reader-content');
+    dom.readerClose     = $('#reader-close');
+    dom.editorOverlay   = $('#editor-overlay');
+    dom.editorForm      = $('#editor-form');
+    dom.editorClose     = $('#editor-close');
+    dom.editorCancel    = $('#editor-cancel');
+    dom.writeBtn        = $('#write-btn');
+    dom.logoLink        = $('#logo-link');
+    dom.themeToggle     = $('#theme-toggle');
+    dom.themeIcon       = $('#theme-icon');
+    dom.statusModal     = $('#status-modal');
+    dom.editStatusBtn   = $('#edit-status-btn');
+    dom.smLastfmUser    = $('#sm-lastfm-user');
+    dom.smLastfmKey     = $('#sm-lastfm-key');
+    dom.smLastfmTest    = $('#sm-lastfm-test');
+    dom.smLastfmStatus  = $('#sm-lastfm-status');
+    dom.miniPlayer      = $('#mini-player');
+    dom.miniVinyl       = $('#mini-vinyl');
+    dom.miniTitle       = $('#mini-title');
+    dom.miniArtist      = $('#mini-artist');
+    dom.miniSourceBadge = $('#mini-source-badge');
+    dom.miniCloseBtn    = $('#mini-close-btn');
+    dom.miniVolume      = $('#mini-volume');
+    dom.directAudioBox  = $('#direct-audio-box');
+    dom.directAudioEl   = $('#direct-audio-element');
+    dom.directPlayBtn   = $('#direct-play-btn');
+    dom.audioTimeCurrent= $('#audio-time-current');
+    dom.audioTimeTotal  = $('#audio-time-total');
+    dom.audioScrubber   = $('#audio-scrubber');
+    dom.embedIframeBox  = $('#embed-iframe-box');
+    dom.edTrackUrl      = $('#ed-track-url');
+    dom.edTrackTitle    = $('#ed-track-title');
+    dom.edTrackArtist   = $('#ed-track-artist');
+    dom.edTrackNote     = $('#ed-track-note');
+    dom.edTrackUrlHint  = $('#ed-track-url-hint');
+    dom.exportBtn       = $('#export-btn');
+    dom.importInput     = $('#import-input');
+    dom.progressBar     = $('#reading-progress');
   }
 
   function escapeHtml(str) {
@@ -85,6 +97,110 @@ window.ZLog = window.ZLog || {};
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  /* ═══════════════════════════════════════
+     URL PARSER & AUDIO HELPERS
+     ═══════════════════════════════════════ */
+
+  function formatAudioTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  }
+
+  function parseTrackUrl(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return null;
+    let url = rawUrl.trim();
+
+    // If user pasted an iframe embed code, extract the src URL
+    const iframeSrcMatch = url.match(/src=["']([^"']+)["']/i);
+    if (iframeSrcMatch) {
+      url = iframeSrcMatch[1];
+    }
+
+    // Direct Audio Files (.mp3, .m4a, .wav, .ogg, .aac)
+    if (/\.(mp3|m4a|wav|ogg|aac)(\?.*)?$/i.test(url)) {
+      return {
+        type: 'audio',
+        platform: 'Direct Audio',
+        url: url,
+        embedUrl: url
+      };
+    }
+
+    // YouTube & YouTube Music
+    // Matches: youtube.com/watch?v=ID, youtu.be/ID, music.youtube.com/watch?v=ID, /embed/ID, /shorts/ID
+    const ytMatch = url.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/))([\w-]{11})/i);
+    if (ytMatch && ytMatch[1]) {
+      const videoId = ytMatch[1];
+      const isMusic = url.includes('music.youtube.com');
+      return {
+        type: 'youtube',
+        platform: isMusic ? 'YouTube Music' : 'YouTube',
+        id: videoId,
+        url: url,
+        embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`
+      };
+    }
+
+    // Spotify (tracks, albums, playlists, episodes)
+    // Matches: open.spotify.com/track/ID, open.spotify.com/album/ID, with optional intl-xx path
+    const spotifyMatch = url.match(/open\.spotify\.com\/(?:intl-[a-z]{2,4}\/)?(track|album|playlist|episode)\/([a-zA-Z0-9]+)/i);
+    if (spotifyMatch) {
+      const mediaType = spotifyMatch[1].toLowerCase();
+      const mediaId = spotifyMatch[2];
+      return {
+        type: 'spotify',
+        platform: 'Spotify',
+        id: mediaId,
+        mediaType: mediaType,
+        url: url,
+        embedUrl: `https://open.spotify.com/embed/${mediaType}/${mediaId}?utm_source=generator`
+      };
+    }
+    if (/open\.spotify\.com\/embed\/(track|album|playlist|episode)\/([a-zA-Z0-9]+)/i.test(url)) {
+      const m = url.match(/open\.spotify\.com\/embed\/(track|album|playlist|episode)\/([a-zA-Z0-9]+)/i);
+      return {
+        type: 'spotify',
+        platform: 'Spotify',
+        id: m[2],
+        mediaType: m[1],
+        url: url,
+        embedUrl: url.includes('utm_source=generator') ? url : `${url}${url.includes('?') ? '&' : '?'}utm_source=generator`
+      };
+    }
+
+    // SoundCloud
+    if (/soundcloud\.com\//i.test(url)) {
+      if (url.includes('w.soundcloud.com/player/')) {
+        return {
+          type: 'soundcloud',
+          platform: 'SoundCloud',
+          url: url,
+          embedUrl: url
+        };
+      }
+      return {
+        type: 'soundcloud',
+        platform: 'SoundCloud',
+        url: url,
+        embedUrl: `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%23537E60&auto_play=true`
+      };
+    }
+
+    // Fallback generic web audio link
+    if (/^https?:\/\//i.test(url)) {
+      return {
+        type: 'generic',
+        platform: 'Audio Link',
+        url: url,
+        embedUrl: url
+      };
+    }
+
+    return null;
   }
 
   /* ═══════════════════════════════════════
@@ -331,15 +447,39 @@ window.ZLog = window.ZLog || {};
       ? `<div class="entry-cover"><div class="entry-cover-inner" style="background:${entry.coverGradient};"></div></div>`
       : '';
 
-    const isPlaying = isTrackPlaying(entry.soundtrack);
-    const songPillIcon = isPlaying ? ICONS.waveform : ICONS.cassette;
-    const songPillHtml = entry.soundtrack
-      ? `<div class="song-pill${isPlaying ? ' playing' : ''}"
-              data-track='${JSON.stringify(entry.soundtrack).replace(/'/g, '&#39;')}'>
-           <span class="pill-icon">${songPillIcon}</span>
-           <span>${entry.soundtrack.title} — ${entry.soundtrack.artist}</span>
-         </div>`
-      : '';
+    let songPillHtml = '';
+    const st = entry.soundtrack;
+    if (st && (st.title || st.artist || st.url || entry.song_url)) {
+      const songUrl = st.url || entry.song_url;
+      const title = st.title || 'Soundtrack';
+      const artist = st.artist || '';
+      const displayLabel = artist ? `${title} — ${artist}` : title;
+
+      if (songUrl) {
+        const fullTrack = { ...st, url: songUrl, title, artist };
+        const isPlaying = isTrackPlaying(fullTrack);
+        const songPillIcon = isPlaying ? ICONS.waveform : ICONS.cassette;
+        songPillHtml = `
+          <div class="song-pill${isPlaying ? ' playing' : ''}"
+               role="button"
+               tabindex="0"
+               title="Play soundtrack"
+               data-entry-id="${entry.id}"
+               data-track='${escapeHtml(JSON.stringify(fullTrack))}'>
+            <span class="pill-icon">${songPillIcon}</span>
+            <span>${escapeHtml(displayLabel)}</span>
+          </div>`;
+      } else {
+        // Clean non-playable soundtrack note
+        songPillHtml = `
+          <div class="song-pill song-pill--note"
+               title="Soundtrack note"
+               data-entry-id="${entry.id}">
+            <span class="pill-icon">${ICONS.cassette}</span>
+            <span>${escapeHtml(displayLabel)}</span>
+          </div>`;
+      }
+    }
 
     const tagsMetaHtml = (entry.tags || []).map(t =>
       `<span class="dot"></span>` + formatTagBadge(t, entry.id, mdlMap)
@@ -390,8 +530,31 @@ window.ZLog = window.ZLog || {};
     const pill = e.target.closest('.song-pill');
     if (pill) {
       e.stopPropagation();
-      const track = JSON.parse(pill.dataset.track);
-      toggleTrack(track);
+      if (pill.classList.contains('song-pill--note')) {
+        return;
+      }
+      let track = null;
+      if (pill.dataset.entryId) {
+        const entry = Data.getEntry(pill.dataset.entryId);
+        if (entry && (entry.soundtrack || entry.song_url)) {
+          const st = entry.soundtrack || {};
+          const songUrl = st.url || entry.song_url;
+          track = {
+            title: st.title || entry.title || 'Soundtrack',
+            artist: st.artist || 'Unknown Artist',
+            note: st.note || '',
+            url: songUrl
+          };
+        }
+      }
+      if (!track && pill.dataset.track) {
+        try {
+          track = JSON.parse(pill.dataset.track);
+        } catch (_) {}
+      }
+      if (track) {
+        toggleTrack(track);
+      }
       return;
     }
 
@@ -703,31 +866,63 @@ window.ZLog = window.ZLog || {};
 
     const mdlMap = Data.getMightDeleteLaterMap(allEntries);
 
-    const soundtrackHtml = entry.soundtrack ? `
-      <div class="soundtrack-card">
-        <div class="vinyl-art${isTrackPlaying(entry.soundtrack) ? ' spinning' : ''}" id="reader-vinyl"></div>
-        <div class="soundtrack-info">
-          <div class="soundtrack-kicker">
-            ${ICONS.cassette}
-            <span>SOUNDTRACK FOR THIS ENTRY</span>
+    let soundtrackHtml = '';
+    const st = entry.soundtrack;
+    if (st && (st.title || st.artist || st.url || entry.song_url)) {
+      const songUrl = st.url || entry.song_url;
+      const title = st.title || 'Soundtrack';
+      const artist = st.artist || 'Unknown';
+      const note = st.note || '';
+      const fullTrack = { ...st, url: songUrl, title, artist };
+      const isPlaying = isTrackPlaying(fullTrack);
+
+      if (songUrl) {
+        const parsed = parseTrackUrl(songUrl);
+        const platformName = parsed ? parsed.platform : 'Soundtrack';
+        soundtrackHtml = `
+          <div class="soundtrack-card">
+            <div class="vinyl-art${isPlaying ? ' spinning' : ''}" id="reader-vinyl"></div>
+            <div class="soundtrack-info">
+              <div class="soundtrack-kicker">
+                ${ICONS.cassette}
+                <span>SOUNDTRACK FOR THIS ENTRY</span>
+              </div>
+              <div class="track-title">${escapeHtml(title)}</div>
+              <div class="track-artist">${escapeHtml(artist)}</div>
+              ${note ? `<div class="track-note">${escapeHtml(note)}</div>` : ''}
+              <div class="soundtrack-controls">
+                <button class="play-btn" id="reader-play-btn"
+                        data-track='${escapeHtml(JSON.stringify(fullTrack))}'
+                        aria-label="Play or Pause soundtrack"
+                        title="Play soundtrack">
+                  ${isPlaying ? ICONS.pause : ICONS.play}
+                </button>
+                <span class="soundtrack-platform-badge">${escapeHtml(platformName)}</span>
+                <a href="${escapeHtml(songUrl)}" target="_blank" rel="noopener noreferrer" class="soundtrack-external-link" title="Open original link">
+                  ${ICONS.externalLink}
+                </a>
+              </div>
+            </div>
           </div>
-          <div class="track-title">${entry.soundtrack.title}</div>
-          <div class="track-artist">${entry.soundtrack.artist}</div>
-          ${entry.soundtrack.note ? `<div class="track-note">${entry.soundtrack.note}</div>` : ''}
-          <div class="soundtrack-controls">
-            <button class="play-btn" id="reader-play-btn"
-                    data-track='${JSON.stringify(entry.soundtrack).replace(/'/g, '&#39;')}'>
-              ${isTrackPlaying(entry.soundtrack) ? ICONS.pause : ICONS.play}
-            </button>
-            <input type="range" class="volume-slider" id="reader-volume"
-                   min="0" max="100" value="${Math.round(Synth.getVolume() * 100)}">
-            <span style="font-size:11px;color:var(--ink-muted);">
-              ${entry.soundtrack.type === 'synth' ? Synth.getPresetLabel(entry.soundtrack.preset) : 'External'}
-            </span>
+        `;
+      } else {
+        // Clean non-playable soundtrack note
+        soundtrackHtml = `
+          <div class="soundtrack-card soundtrack-card--note">
+            <div class="vinyl-art" id="reader-vinyl"></div>
+            <div class="soundtrack-info">
+              <div class="soundtrack-kicker">
+                ${ICONS.cassette}
+                <span>SOUNDTRACK NOTE</span>
+              </div>
+              <div class="track-title">${escapeHtml(title)}</div>
+              <div class="track-artist">${escapeHtml(artist)}</div>
+              ${note ? `<div class="track-note">${escapeHtml(note)}</div>` : ''}
+            </div>
           </div>
-        </div>
-      </div>
-    ` : '';
+        `;
+      }
+    }
 
     const tagsMetaHtml = (entry.tags || []).map(t =>
       `<span class="dot"></span>` + formatTagBadge(t, entry.id, mdlMap)
@@ -789,17 +984,13 @@ window.ZLog = window.ZLog || {};
     const readerPlayBtn = $('#reader-play-btn');
     if (readerPlayBtn) {
       readerPlayBtn.addEventListener('click', () => {
-        const track = JSON.parse(readerPlayBtn.dataset.track);
-        toggleTrack(track);
-        updateReaderPlayState(track);
-      });
-    }
-
-    const readerVolume = $('#reader-volume');
-    if (readerVolume) {
-      readerVolume.addEventListener('input', (e) => {
-        Synth.setVolume(e.target.value / 100);
-        dom.miniVolume.value = e.target.value;
+        try {
+          const track = JSON.parse(readerPlayBtn.dataset.track);
+          toggleTrack(track);
+          updateReaderPlayState(track);
+        } catch (err) {
+          console.warn('Reader play button error:', err);
+        }
       });
     }
 
@@ -914,8 +1105,11 @@ window.ZLog = window.ZLog || {};
     $('#ed-track-title').value = '';
     $('#ed-track-artist').value = '';
     $('#ed-track-note').value = '';
-    $('#ed-track-preset').value = 'warmRhodes';
     $('#ed-track-url').value = '';
+    if (dom.edTrackUrlHint) {
+      dom.edTrackUrlHint.textContent = 'Auto-fills Song Title and Artist when link is pasted';
+      dom.edTrackUrlHint.style.color = 'var(--ink-muted)';
+    }
     $('#ed-body').value = '';
 
     updateEditorQuickTagState();
@@ -930,6 +1124,102 @@ window.ZLog = window.ZLog || {};
     dom.editorOverlay.classList.remove('open');
     editorOpen = false;
     document.body.style.overflow = '';
+  }
+
+  /* ── Auto-Fill Song Details via oEmbed / NoEmbed ── */
+  async function handleSongUrlAutoFill() {
+    const urlInput = $('#ed-track-url');
+    if (!urlInput) return;
+    const rawUrl = urlInput.value.trim();
+    if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) return;
+
+    const titleInput = $('#ed-track-title');
+    const artistInput = $('#ed-track-artist');
+    if (!titleInput || !artistInput) return;
+
+    // Do not overwrite if author already filled both fields
+    if (titleInput.value.trim() && artistInput.value.trim()) return;
+
+    const hintEl = dom.edTrackUrlHint || $('#ed-track-url-hint');
+    const defaultHint = 'Auto-fills Song Title and Artist when link is pasted';
+    if (hintEl) {
+      hintEl.textContent = 'Fetching song details…';
+      hintEl.style.color = 'var(--accent)';
+    }
+
+    try {
+      let fetched = false;
+
+      // 1. Spotify oEmbed
+      if (/open\.spotify\.com\/(?:intl-[a-z]{2,4}\/)?(track|album)/i.test(rawUrl)) {
+        try {
+          const spotifyRes = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(rawUrl)}`);
+          if (spotifyRes.ok) {
+            const data = await spotifyRes.json();
+            if (data && data.title) {
+              if (!titleInput.value.trim()) titleInput.value = data.title;
+              fetched = true;
+            }
+          }
+        } catch (_) {}
+      }
+
+      // 2. noembed.com fallback (YouTube, YouTube Music, SoundCloud, Vimeo, etc.)
+      if (!fetched) {
+        const noembedRes = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(rawUrl)}`);
+        if (noembedRes.ok) {
+          const data = await noembedRes.json();
+          if (data && !data.error) {
+            const authorName = (data.author_name || '').trim();
+            let rawTitle = (data.title || '').trim();
+
+            // Clean common video decorations
+            rawTitle = rawTitle.replace(/\s*[\(\[](?:Official\s*(?:Music\s*)?(?:Video|Audio|HD|4K|Remaster|Visualizer|Lyric Video)|Music Video|Lyric Video)[\)\]]/gi, '').trim();
+
+            let detectedArtist = authorName;
+            let detectedTitle = rawTitle;
+
+            if (rawTitle.includes(' - ')) {
+              const parts = rawTitle.split(/\s+-\s+/);
+              if (authorName && parts[0].toLowerCase().includes(authorName.toLowerCase())) {
+                detectedArtist = authorName;
+                detectedTitle = parts.slice(1).join(' - ').trim();
+              } else if (parts.length >= 2) {
+                detectedArtist = parts[0].trim();
+                detectedTitle = parts.slice(1).join(' - ').trim();
+              }
+            }
+
+            if (!titleInput.value.trim() && detectedTitle) {
+              titleInput.value = detectedTitle;
+            }
+            if (!artistInput.value.trim() && detectedArtist) {
+              artistInput.value = detectedArtist;
+            }
+            fetched = true;
+          }
+        }
+      }
+
+      if (fetched) {
+        if (hintEl) {
+          hintEl.textContent = 'Auto-filled Song Title & Artist from link';
+          hintEl.style.color = 'var(--accent)';
+        }
+        showToast('Song details auto-filled from link.');
+      } else {
+        if (hintEl) {
+          hintEl.textContent = defaultHint;
+          hintEl.style.color = 'var(--ink-muted)';
+        }
+      }
+    } catch (err) {
+      console.warn('Song URL auto-fill note:', err);
+      if (hintEl) {
+        hintEl.textContent = defaultHint;
+        hintEl.style.color = 'var(--ink-muted)';
+      }
+    }
   }
 
   function handlePublish(e) {
@@ -968,18 +1258,18 @@ window.ZLog = window.ZLog || {};
       }
     }
 
-    // Build soundtrack object
+    // Build soundtrack object (Real song playback)
     let soundtrack = null;
     const trackTitle = $('#ed-track-title').value.trim();
     const trackArtist = $('#ed-track-artist').value.trim();
-    if (trackTitle) {
+    const trackNote = $('#ed-track-note').value.trim();
+    const trackUrl = $('#ed-track-url').value.trim();
+    if (trackTitle || trackUrl) {
       soundtrack = {
-        title: trackTitle,
-        artist: trackArtist || 'Unknown',
-        note: $('#ed-track-note').value.trim(),
-        type: $('#ed-track-preset').value ? 'synth' : 'url',
-        preset: $('#ed-track-preset').value || null,
-        url: $('#ed-track-url').value.trim() || null
+        title: trackTitle || 'Soundtrack',
+        artist: trackArtist || 'Unknown Artist',
+        note: trackNote || '',
+        url: trackUrl || null
       };
     }
 
@@ -1003,6 +1293,7 @@ window.ZLog = window.ZLog || {};
       date: $('#ed-date').value,
       tags,
       soundtrack,
+      song_url: trackUrl || null,
       body: rawBody,
       coverGradient
     };
@@ -1021,92 +1312,246 @@ window.ZLog = window.ZLog || {};
   }
 
   /* ═══════════════════════════════════════
-     AUDIO PLAYER
+     REAL SONG SOUNDTRACK PLAYER
      ═══════════════════════════════════════ */
 
-  function isTrackPlaying(track) {
-    if (!Synth.isPlaying() || !currentTrack) return false;
-    return currentTrack.title === track.title && currentTrack.artist === track.artist;
+  function isTrackPlaying(soundtrack) {
+    if (!currentTrack || !soundtrack) return false;
+    const urlA = currentTrack.url || '';
+    const urlB = soundtrack.url || '';
+    if (urlA && urlB && urlA === urlB) {
+      if (currentTrack.parsed && currentTrack.parsed.type === 'audio' && dom.directAudioEl) {
+        return !dom.directAudioEl.paused;
+      }
+      return true;
+    }
+    if (currentTrack.title && soundtrack.title && currentTrack.title === soundtrack.title) {
+      return (currentTrack.artist || '') === (soundtrack.artist || '');
+    }
+    return false;
   }
 
-  function toggleTrack(track) {
-    if (isTrackPlaying(track)) {
-      // Stop
-      Synth.stop();
-      currentTrack = null;
-      hideMiniPlayer();
-      renderFeed(); // Update pill states
+  function playTrack(soundtrack) {
+    if (!soundtrack) return;
+    const songUrl = soundtrack.url || '';
+    if (!songUrl) {
+      showToast('No audio link attached to this soundtrack note.');
       return;
     }
 
-    // Play new track
-    if (track.type === 'synth' && track.preset) {
-      Synth.play(track.preset);
-    } else {
-      Synth.play('warmRhodes');
-    }
-
-    currentTrack = track;
-    showMiniPlayer(track);
-    renderFeed(); // Update pill states
-  }
-
-  function showMiniPlayer(track) {
-    dom.miniTitle.textContent = track.title;
-    dom.miniArtist.textContent = track.artist;
-    dom.miniPlayBtn.innerHTML = ICONS.pause;
-    dom.miniVinyl.classList.add('spinning');
-    dom.miniPlayer.classList.add('visible');
-  }
-
-  function hideMiniPlayer() {
-    dom.miniPlayer.classList.remove('visible');
-    dom.miniVinyl.classList.remove('spinning');
-    dom.miniPlayBtn.innerHTML = ICONS.play;
-  }
-
-  function handleMiniPlayPause() {
-    if (!currentTrack) return;
-
-    if (Synth.isPlaying()) {
-      Synth.stop();
-      dom.miniPlayBtn.innerHTML = ICONS.play;
-      dom.miniVinyl.classList.remove('spinning');
-
-      const readerVinyl = $('#reader-vinyl');
-      if (readerVinyl) readerVinyl.classList.remove('spinning');
-      const readerBtn = $('#reader-play-btn');
-      if (readerBtn) readerBtn.innerHTML = ICONS.play;
-
-      renderFeed();
-    } else {
-      if (currentTrack.type === 'synth' && currentTrack.preset) {
-        Synth.play(currentTrack.preset);
+    // Toggle if same track already active
+    if (currentTrack && currentTrack.url === songUrl) {
+      if (currentTrack.parsed && currentTrack.parsed.type === 'audio' && dom.directAudioEl) {
+        if (!dom.directAudioEl.paused) {
+          dom.directAudioEl.pause();
+          if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+          if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
+        } else {
+          dom.directAudioEl.play().catch(() => {});
+          if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+          if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.pause;
+        }
+        updateAllSoundtrackPills();
+        return;
       } else {
-        Synth.play('warmRhodes');
+        // Toggle off for iframe track
+        stopTrack();
+        return;
       }
-      dom.miniPlayBtn.innerHTML = ICONS.pause;
-      dom.miniVinyl.classList.add('spinning');
+    }
 
-      const readerVinyl = $('#reader-vinyl');
-      if (readerVinyl) readerVinyl.classList.add('spinning');
-      const readerBtn = $('#reader-play-btn');
-      if (readerBtn) readerBtn.innerHTML = ICONS.pause;
+    const parsed = parseTrackUrl(songUrl);
+    if (!parsed) {
+      showToast('Could not parse audio link.');
+      return;
+    }
 
-      renderFeed();
+    currentTrack = {
+      title: soundtrack.title || 'Soundtrack',
+      artist: soundtrack.artist || 'Unknown Artist',
+      note: soundtrack.note || '',
+      url: songUrl,
+      parsed: parsed
+    };
+
+    // Update Header Info
+    if (dom.miniTitle) dom.miniTitle.textContent = currentTrack.title;
+    if (dom.miniArtist) dom.miniArtist.textContent = currentTrack.artist;
+    if (dom.miniSourceBadge) dom.miniSourceBadge.textContent = parsed.platform;
+
+    // Direct Audio vs Iframe Player
+    if (parsed.type === 'audio') {
+      if (dom.embedIframeBox) {
+        dom.embedIframeBox.innerHTML = '';
+        dom.embedIframeBox.style.display = 'none';
+      }
+      if (dom.directAudioBox) dom.directAudioBox.style.display = 'flex';
+
+      if (dom.directAudioEl) {
+        dom.directAudioEl.src = parsed.url;
+        dom.directAudioEl.volume = dom.miniVolume ? (dom.miniVolume.value / 100) : 0.8;
+        dom.directAudioEl.play().then(() => {
+          if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.pause;
+          if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+        }).catch(err => {
+          console.warn('Direct audio play failed:', err);
+          if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
+        });
+      }
+    } else {
+      // Pause and clear direct audio
+      if (dom.directAudioEl) {
+        dom.directAudioEl.pause();
+        dom.directAudioEl.src = '';
+      }
+      if (dom.directAudioBox) dom.directAudioBox.style.display = 'none';
+      if (dom.embedIframeBox) dom.embedIframeBox.style.display = 'block';
+
+      // Render visible iframe at standard compact dimensions
+      let iframeHtml = '';
+      if (parsed.type === 'spotify') {
+        iframeHtml = `<iframe style="border-radius:12px;border:0;display:block;" src="${escapeHtml(parsed.embedUrl)}" width="100%" height="80" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+      } else if (parsed.type === 'youtube') {
+        iframeHtml = `<iframe width="100%" height="180" src="${escapeHtml(parsed.embedUrl)}" title="${escapeHtml(currentTrack.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="border-radius:12px;border:1px solid var(--border);display:block;"></iframe>`;
+      } else if (parsed.type === 'soundcloud') {
+        iframeHtml = `<iframe width="100%" height="120" scrolling="no" frameborder="no" allow="autoplay" style="border-radius:12px;border:0;display:block;" src="${escapeHtml(parsed.embedUrl)}"></iframe>`;
+      } else {
+        iframeHtml = `<iframe width="100%" height="120" style="border-radius:12px;border:1px solid var(--border);display:block;" src="${escapeHtml(parsed.embedUrl)}" allow="autoplay"></iframe>`;
+      }
+
+      if (dom.embedIframeBox) {
+        dom.embedIframeBox.innerHTML = iframeHtml;
+      }
+
+      if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+    }
+
+    if (dom.miniPlayer) dom.miniPlayer.classList.add('visible');
+    updateAllSoundtrackPills();
+  }
+
+  function stopTrack() {
+    if (dom.directAudioEl) {
+      dom.directAudioEl.pause();
+      dom.directAudioEl.src = '';
+    }
+    if (dom.embedIframeBox) {
+      dom.embedIframeBox.innerHTML = '';
+    }
+    if (dom.miniPlayer) dom.miniPlayer.classList.remove('visible');
+    if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+    currentTrack = null;
+    updateAllSoundtrackPills();
+  }
+
+  function toggleTrack(soundtrack) {
+    if (isTrackPlaying(soundtrack)) {
+      stopTrack();
+    } else {
+      playTrack(soundtrack);
     }
   }
 
-  function handleMiniClose() {
-    Synth.stop();
-    currentTrack = null;
-    hideMiniPlayer();
-    renderFeed();
+  function updateAllSoundtrackPills() {
+    // Update feed pills
+    $$('.song-pill').forEach(pill => {
+      let isPlaying = false;
+      if (pill.dataset.entryId) {
+        const entry = Data.getEntry(pill.dataset.entryId);
+        if (entry) {
+          const st = entry.soundtrack || {};
+          const songUrl = st.url || entry.song_url;
+          isPlaying = isTrackPlaying({ ...st, url: songUrl });
+        }
+      } else if (pill.dataset.track) {
+        try {
+          const t = JSON.parse(pill.dataset.track);
+          isPlaying = isTrackPlaying(t);
+        } catch (_) {}
+      }
+      pill.classList.toggle('playing', isPlaying);
+      const iconSpan = pill.querySelector('.pill-icon');
+      if (iconSpan) {
+        iconSpan.innerHTML = isPlaying ? ICONS.waveform : ICONS.cassette;
+      }
+    });
 
+    // Update reader controls if reader open
+    const readerPlayBtn = $('#reader-play-btn');
     const readerVinyl = $('#reader-vinyl');
-    if (readerVinyl) readerVinyl.classList.remove('spinning');
-    const readerBtn = $('#reader-play-btn');
-    if (readerBtn) readerBtn.innerHTML = ICONS.play;
+    if (readerPlayBtn) {
+      let active = false;
+      if (readerPlayBtn.dataset.track) {
+        try {
+          const t = JSON.parse(readerPlayBtn.dataset.track);
+          active = isTrackPlaying(t);
+        } catch (_) {}
+      }
+      readerPlayBtn.innerHTML = active ? ICONS.pause : ICONS.play;
+      if (readerVinyl) readerVinyl.classList.toggle('spinning', active);
+    }
+  }
+
+  function initDirectAudioEvents() {
+    if (!dom.directAudioEl) return;
+
+    dom.directAudioEl.addEventListener('loadedmetadata', () => {
+      if (dom.audioTimeTotal) {
+        dom.audioTimeTotal.textContent = formatAudioTime(dom.directAudioEl.duration);
+      }
+      if (dom.audioScrubber) {
+        dom.audioScrubber.max = dom.directAudioEl.duration || 100;
+        dom.audioScrubber.value = 0;
+      }
+    });
+
+    dom.directAudioEl.addEventListener('timeupdate', () => {
+      if (dom.audioTimeCurrent) {
+        dom.audioTimeCurrent.textContent = formatAudioTime(dom.directAudioEl.currentTime);
+      }
+      if (dom.audioScrubber && !dom.audioScrubber._dragging) {
+        dom.audioScrubber.value = dom.directAudioEl.currentTime;
+      }
+    });
+
+    dom.directAudioEl.addEventListener('ended', () => {
+      if (dom.directPlayBtn) dom.directPlayBtn.innerHTML = ICONS.play;
+      if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+      updateAllSoundtrackPills();
+    });
+
+    if (dom.directPlayBtn) {
+      dom.directPlayBtn.addEventListener('click', () => {
+        if (!dom.directAudioEl) return;
+        if (dom.directAudioEl.paused) {
+          dom.directAudioEl.play().catch(() => {});
+          dom.directPlayBtn.innerHTML = ICONS.pause;
+          if (dom.miniVinyl) dom.miniVinyl.classList.add('spinning');
+        } else {
+          dom.directAudioEl.pause();
+          dom.directPlayBtn.innerHTML = ICONS.play;
+          if (dom.miniVinyl) dom.miniVinyl.classList.remove('spinning');
+        }
+        updateAllSoundtrackPills();
+      });
+    }
+
+    if (dom.audioScrubber) {
+      dom.audioScrubber.addEventListener('mousedown', () => { dom.audioScrubber._dragging = true; });
+      dom.audioScrubber.addEventListener('mouseup', () => { dom.audioScrubber._dragging = false; });
+      dom.audioScrubber.addEventListener('input', (e) => {
+        if (dom.directAudioEl) {
+          dom.directAudioEl.currentTime = Number(e.target.value);
+        }
+      });
+    }
+
+    if (dom.miniVolume) {
+      dom.miniVolume.addEventListener('input', (e) => {
+        const vol = Number(e.target.value) / 100;
+        if (dom.directAudioEl) dom.directAudioEl.volume = vol;
+      });
+    }
   }
 
   /* ═══════════════════════════════════════
@@ -1141,6 +1586,13 @@ window.ZLog = window.ZLog || {};
     dom.editorClose.addEventListener('click', closeEditor);
     dom.editorCancel.addEventListener('click', closeEditor);
     dom.editorForm.addEventListener('submit', handlePublish);
+    if (dom.edTrackUrl) {
+      dom.edTrackUrl.addEventListener('blur', handleSongUrlAutoFill);
+      dom.edTrackUrl.addEventListener('change', handleSongUrlAutoFill);
+      dom.edTrackUrl.addEventListener('paste', () => {
+        setTimeout(handleSongUrlAutoFill, 80);
+      });
+    }
 
     // Status modal
     dom.editStatusBtn.addEventListener('click', openStatusModal);
@@ -1150,14 +1602,11 @@ window.ZLog = window.ZLog || {};
       if (e.target === dom.statusModal) closeStatusModal();
     });
 
-    // Mini player
-    dom.miniPlayBtn.addEventListener('click', handleMiniPlayPause);
-    dom.miniCloseBtn.addEventListener('click', handleMiniClose);
-    dom.miniVolume.addEventListener('input', (e) => {
-      Synth.setVolume(e.target.value / 100);
-      const readerVol = $('#reader-volume');
-      if (readerVol) readerVol.value = e.target.value;
-    });
+    // Mini player & direct audio
+    if (dom.miniCloseBtn) {
+      dom.miniCloseBtn.addEventListener('click', stopTrack);
+    }
+    initDirectAudioEvents();
 
     // Export / Import
     dom.exportBtn.addEventListener('click', Data.exportAll);
@@ -1257,21 +1706,24 @@ window.ZLog = window.ZLog || {};
       dom.smLastfmTest.addEventListener('click', handleLastFmTestConnection);
     }
 
-    // "Currently" music click → open URL or play ambient synth
+    // "Currently" music click → play track if link available or display toast
     dom.currentlyItems.addEventListener('click', (e) => {
       const playEl = e.target.closest('#currently-play');
       if (playEl) {
-        const isExternal = playEl.dataset.external === 'true';
         const url = playEl.dataset.url;
-        if (isExternal && url) {
-          window.open(url, '_blank', 'noopener,noreferrer');
+        if (url) {
+          const parsed = parseTrackUrl(url);
+          if (parsed) {
+            toggleTrack({
+              title: playEl.dataset.title || 'On Repeat',
+              artist: playEl.dataset.artist || 'Zee’s Playlist',
+              url: url
+            });
+          } else {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
         } else {
-          toggleTrack({
-            title: playEl.dataset.title || 'Where’s My Love',
-            artist: playEl.dataset.artist || 'SYML',
-            type: 'synth',
-            preset: 'warmRhodes'
-          });
+          showToast(`Soundtrack note: ${playEl.dataset.title || 'Where’s My Love'} — ${playEl.dataset.artist || 'SYML'}`);
         }
       }
     });

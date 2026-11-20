@@ -249,20 +249,10 @@
             <label for="ed-track-note" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);">Why this song fits</label>
             <input type="text" id="ed-track-note" placeholder="A personal note about this soundtrack…">
           </div>
-          <div class="editor-row">
-            <div class="editor-field">
-              <label for="ed-track-preset" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);">Ambient Preset</label>
-              <select id="ed-track-preset">
-                <option value="">— None (custom URL only) —</option>
-                <option value="warmRhodes">Warm Rhodes Chords</option>
-                <option value="rainCrackle">Rain & Vinyl Crackle</option>
-                <option value="lofiPiano">Lo-Fi Piano</option>
-              </select>
-            </div>
-            <div class="editor-field">
-              <label for="ed-track-url" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);">External URL (optional)</label>
-              <input type="url" id="ed-track-url" placeholder="Spotify or YouTube embed link…">
-            </div>
+          <div class="editor-field" style="margin-top:0;">
+            <label for="ed-track-url" style="text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:var(--ink);">Song Link (YouTube, YouTube Music, Spotify, or .mp3)</label>
+            <input type="url" id="ed-track-url" placeholder="Paste YouTube, Spotify, SoundCloud, or direct .mp3 link…">
+            <span class="editor-field-hint" id="ed-track-url-hint" style="font-size:11px;color:var(--ink-muted);font-style:italic;margin-top:4px;display:block;">Auto-fills Song Title and Artist when link is pasted</span>
           </div>
         </div>
 
@@ -391,30 +381,50 @@
   <!-- ═══════════ TOAST NOTICE ═══════════ -->
   <div class="toast-notice" id="toast-notice" role="status" aria-live="polite"></div>
 
-  <!-- ═══════════ MINI PLAYER ═══════════ -->
-  <div class="mini-player" id="mini-player">
+  <!-- ═══════════ FLOATING SOUNDTRACK PLAYER ═══════════ -->
+  <aside class="mini-player" id="mini-player" aria-label="Soundtrack Player">
     <div class="mini-player-inner">
-      <div class="mini-vinyl" id="mini-vinyl"></div>
-      <div class="mini-player-info">
-        <div class="mini-title" id="mini-title">—</div>
-        <div class="mini-artist" id="mini-artist">—</div>
+      <div class="mini-player-header">
+        <div class="mini-vinyl" id="mini-vinyl"></div>
+        <div class="mini-player-info">
+          <div class="mini-title" id="mini-title">—</div>
+          <div class="mini-meta">
+            <span class="mini-artist" id="mini-artist">—</span>
+            <span class="mini-source-badge" id="mini-source-badge">Soundtrack</span>
+          </div>
+        </div>
+        <div class="mini-player-actions">
+          <button class="mini-close-btn" id="mini-close-btn" aria-label="Close soundtrack player" title="Close player">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
       </div>
-      <div class="mini-player-controls">
-        <input type="range" class="volume-slider" id="mini-volume" min="0" max="100" value="35" title="Volume">
-        <button class="mini-play-btn" id="mini-play-btn" aria-label="Play/Pause">
-          <svg class="icon-play" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-        </button>
-        <button class="mini-close-btn" id="mini-close-btn" aria-label="Close player">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+
+      <!-- Real Song Media Container (Visible iframe / Audio player) -->
+      <div class="mini-player-media" id="mini-player-media">
+        <!-- Direct Audio Element & Controls -->
+        <div class="direct-audio-box" id="direct-audio-box" style="display:none;">
+          <audio id="direct-audio-element" preload="metadata"></audio>
+          <div class="direct-audio-controls">
+            <button class="direct-play-btn" id="direct-play-btn" aria-label="Play or Pause audio">
+              <svg class="icon-play" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            </button>
+            <span class="audio-time" id="audio-time-current">0:00</span>
+            <input type="range" class="audio-scrubber" id="audio-scrubber" min="0" max="100" value="0" step="0.1" aria-label="Audio scrubber">
+            <span class="audio-time" id="audio-time-total">0:00</span>
+            <input type="range" class="volume-slider" id="mini-volume" min="0" max="100" value="80" title="Volume">
+          </div>
+        </div>
+
+        <!-- Embed Iframe Box (YouTube, Spotify, SoundCloud) -->
+        <div class="embed-iframe-box" id="embed-iframe-box"></div>
       </div>
     </div>
-  </div>
+  </aside>
 
   <!-- ═══════════ SCRIPTS ═══════════ -->
   <script src="posts.js"></script>
   <script src="js/data.js"></script>
-  <script src="js/synth.js"></script>
   <script src="js/app.js"></script>
 
 </body>
