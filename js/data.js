@@ -416,21 +416,18 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     try {
       const row = {
         id: 1,
-        reading:     newStatus.reading || '',
-        on_repeat:   newStatus.onRepeat || '',
-        daydreaming: newStatus.daydreaming || ''
+        reading:   newStatus.reading || '',
+        on_repeat: newStatus.onRepeat || ''
       };
       const { error } = await sb.from('site_status').upsert(row);
       if (error) {
-        if (error.message && error.message.includes('daydreaming')) {
-          delete row.daydreaming;
-          await sb.from('site_status').upsert(row);
-        } else {
-          console.warn('ZLog: Supabase site_status upsert warning:', error.message);
-        }
+        console.error('ZLog: Supabase site_status upsert error:', error);
+        alert('Supabase Status Update Error: ' + error.message);
+        throw error;
       }
     } catch (err) {
       console.warn('ZLog: Supabase site_status save error:', err);
+      throw err;
     }
   }
 
@@ -486,6 +483,68 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     filtered.unshift(created);
     saveEntries(filtered);
     return created;
+  }
+
+  function updateEntry(id, updatedFields) {
+    const entries = loadEntries();
+    const idx = entries.findIndex(e => String(e.id) === String(id));
+    if (idx !== -1) {
+      entries[idx] = { ...entries[idx], ...updatedFields };
+      saveEntries(entries);
+      return entries[idx];
+    }
+    return null;
+  }
+
+  async function updateLivePost(id, entry) {
+    const sb = getSupabase();
+    if (!sb) {
+      return updateEntry(id, entry);
+    }
+
+    const soundtrack = entry.soundtrack || {};
+    const songUrl = entry.song_url || soundtrack.url || null;
+    const songTitle = soundtrack.title || entry.song_title || '';
+    const songArtist = soundtrack.artist || entry.song_artist || '';
+    const songNote = soundtrack.note || entry.song_note || '';
+    const tag = (entry.tags && entry.tags.length > 0) ? entry.tags[0] : (entry.tag || '');
+
+    // ONLY send columns that exist in public.posts
+    const row = {
+      title: entry.title,
+      subtitle: entry.subtitle || '',
+      content: entry.body || entry.content || '',
+      tag: tag,
+      published: true,
+      song_url: songUrl,
+      song_title: songTitle,
+      song_artist: songArtist,
+      song_note: songNote
+    };
+
+    if (entry.cover_image) {
+      row.cover_image = entry.cover_image;
+    }
+
+    const { data, error } = await sb.from('posts').update(row).eq('id', id).select();
+    if (error) {
+      console.error('ZLog: Supabase update post error:', error);
+      alert('Supabase Update Error: ' + (error.message || JSON.stringify(error)));
+      const err = new Error(error.message || 'Supabase update failed');
+      err._alerted = true;
+      throw err;
+    }
+
+    const updated = data && data[0] ? mapPostRow(data[0]) : { ...entry, id };
+    const current = loadEntries();
+    const idx = current.findIndex(e => String(e.id) === String(id));
+    if (idx !== -1) {
+      current[idx] = updated;
+    } else {
+      current.unshift(updated);
+    }
+    saveEntries(current);
+    return updated;
   }
 
   async function deleteLivePost(id) {
@@ -615,6 +674,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     fetchLiveStatus,
     saveLiveStatus,
     insertLivePost,
+    updateLivePost,
     deleteLivePost,
     seedStarterEntries,
     getAuthSession,
@@ -623,6 +683,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     loadEntries,
     saveEntries,
     addEntry,
+    updateEntry,
     deleteEntry,
     getEntry,
     getFilteredEntries,

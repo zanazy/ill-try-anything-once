@@ -559,6 +559,10 @@ window.ZLog = window.ZLog || {};
           <span class="dot"></span>
           <span>${entry.readingTime || '?'} min read</span>
           ${tagsMetaHtml}
+          <button type="button" class="entry-edit-pill author-only" data-entry-id="${entry.id}" title="Edit this entry">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span>Edit</span>
+          </button>
         </div>
         ${coverHtml}
         <h2>${entry.title}</h2>
@@ -598,6 +602,19 @@ window.ZLog = window.ZLog || {};
   }
 
   function handleFeedClick(e) {
+    // Edit entry pill click (Author only)
+    const editPill = e.target.closest('.entry-edit-pill');
+    if (editPill) {
+      e.stopPropagation();
+      e.preventDefault();
+      const id = editPill.dataset.entryId;
+      const entry = Data.getEntry(id);
+      if (entry) {
+        openEditor(entry);
+      }
+      return;
+    }
+
     // Song pill click
     const pill = e.target.closest('.song-pill');
     if (pill) {
@@ -737,6 +754,19 @@ window.ZLog = window.ZLog || {};
      STATUS MODAL
      ═══════════════════════════════════════ */
 
+  function handleEditStatusClick(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const isAuthed = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
+    if (!isAuthed) {
+      openAuthorModal();
+      return;
+    }
+    openStatusModal();
+  }
+
   function openStatusModal() {
     const status = Data.loadStatus();
     if ($('#sm-reading')) $('#sm-reading').value         = status.reading || '';
@@ -859,7 +889,11 @@ window.ZLog = window.ZLog || {};
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
             <span>Back</span>
           </button>
-          <div class="single-entry-topbar-meta">
+          <div class="single-entry-topbar-actions">
+            <button type="button" class="reader-edit-btn author-only" id="reader-edit-btn" data-id="${entry.id}" title="Edit this entry">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>Edit</span>
+            </button>
             <span style="font-size:12px;color:var(--ink-muted);font-style:italic;">I’ll Try Anything Once</span>
           </div>
         </div>
@@ -869,6 +903,10 @@ window.ZLog = window.ZLog || {};
           <span class="dot"></span>
           <span>${entry.readingTime || '?'} min read</span>
           ${tagsMetaHtml}
+          <button type="button" class="entry-edit-pill author-only" data-entry-id="${entry.id}" title="Edit this entry">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span>Edit</span>
+          </button>
         </div>
 
         <h1 class="single-entry-title">${entry.title}</h1>
@@ -882,6 +920,10 @@ window.ZLog = window.ZLog || {};
 
         <div class="reader-footer-actions">
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="reader-edit-btn author-only" id="reader-footer-edit-btn" data-id="${entry.id}">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>Edit Entry</span>
+            </button>
             <span style="font-size:12px;color:var(--ink-muted);font-style:italic;">I’ll Try Anything Once</span>
           </div>
           <button class="reader-delete-btn author-only" id="reader-delete-btn" data-id="${entry.id}">
@@ -906,6 +948,16 @@ window.ZLog = window.ZLog || {};
     if (backBtn) {
       backBtn.addEventListener('click', () => closeReader());
     }
+
+    // Edit button inside reader (Author only)
+    const readerEditBtn = $('#reader-edit-btn');
+    const readerFooterEditBtn = $('#reader-footer-edit-btn');
+    const handleReaderEdit = (e) => {
+      if (e) e.preventDefault();
+      openEditor(entry);
+    };
+    if (readerEditBtn) readerEditBtn.addEventListener('click', handleReaderEdit);
+    if (readerFooterEditBtn) readerFooterEditBtn.addEventListener('click', handleReaderEdit);
 
     // Delete button inside reader (Author only)
     const deleteBtn = $('#reader-delete-btn');
@@ -997,6 +1049,7 @@ window.ZLog = window.ZLog || {};
 
   let selectedCanvasCategory = null;
   let isCanvasPreviewActive = false;
+  let editingPostId = null;
 
   function getNextMdlNumber() {
     const allEntries = Data.loadEntries();
@@ -1329,34 +1382,68 @@ window.ZLog = window.ZLog || {};
     }
   }
 
-  function openEditor() {
-    selectedCanvasCategory = null;
+  function openEditor(entryToEdit = null) {
+    editingPostId = entryToEdit ? entryToEdit.id : null;
     isCanvasPreviewActive = false;
 
-    if (dom.canvasTitle) {
-      dom.canvasTitle.value = '';
-      dom.canvasTitle.placeholder = 'Title';
-      dom.canvasTitle.style.height = 'auto';
-    }
-    if (dom.canvasSubtitle) {
-      dom.canvasSubtitle.value = '';
-      dom.canvasSubtitle.placeholder = 'Add a subtitle...';
-      dom.canvasSubtitle.style.height = 'auto';
-    }
-    if (dom.canvasBody) {
-      dom.canvasBody.innerHTML = '';
-    }
+    if (entryToEdit) {
+      // Edit mode: pre-fill fields
+      if (dom.canvasTitle) {
+        dom.canvasTitle.value = entryToEdit.title || '';
+        dom.canvasTitle.placeholder = 'Title';
+        autoGrowTextarea(dom.canvasTitle);
+      }
+      if (dom.canvasSubtitle) {
+        dom.canvasSubtitle.value = entryToEdit.subtitle || '';
+        dom.canvasSubtitle.placeholder = 'Add a subtitle...';
+        autoGrowTextarea(dom.canvasSubtitle);
+      }
+      if (dom.canvasBody) {
+        dom.canvasBody.innerHTML = entryToEdit.body || entryToEdit.content || '';
+      }
 
-    if (dom.canvasTrackUrl) dom.canvasTrackUrl.value = '';
-    if (dom.canvasTrackTitle) dom.canvasTrackTitle.value = '';
-    if (dom.canvasTrackArtist) dom.canvasTrackArtist.value = '';
-    if (dom.canvasTrackNote) dom.canvasTrackNote.value = '';
-    if (dom.canvasTrackHint) {
-      dom.canvasTrackHint.textContent = 'Auto-fills Song Title and Artist when link is pasted';
-      dom.canvasTrackHint.style.color = 'var(--ink-muted)';
+      // Pre-select category tag
+      const existingTag = (entryToEdit.tags && entryToEdit.tags[0]) || entryToEdit.tag || null;
+      selectedCanvasCategory = existingTag;
+
+      // Pre-fill soundtrack
+      const st = entryToEdit.soundtrack || {};
+      const songUrl = entryToEdit.song_url || st.url || '';
+      if (songUrl || st.title || entryToEdit.song_title) {
+        if (dom.canvasTrackUrl) dom.canvasTrackUrl.value = songUrl;
+        if (dom.canvasTrackTitle) dom.canvasTrackTitle.value = st.title || entryToEdit.song_title || '';
+        if (dom.canvasTrackArtist) dom.canvasTrackArtist.value = st.artist || entryToEdit.song_artist || '';
+        if (dom.canvasTrackNote) dom.canvasTrackNote.value = st.note || entryToEdit.song_note || '';
+        toggleSoundtrackStrip(true);
+      } else {
+        removeSoundtrackStrip();
+      }
+
+      const publishBtnSpan = dom.canvasPublishBtn ? dom.canvasPublishBtn.querySelector('span') : null;
+      if (publishBtnSpan) publishBtnSpan.textContent = 'Save Changes';
+    } else {
+      // New entry mode
+      selectedCanvasCategory = null;
+
+      if (dom.canvasTitle) {
+        dom.canvasTitle.value = '';
+        dom.canvasTitle.placeholder = 'Title';
+        dom.canvasTitle.style.height = 'auto';
+      }
+      if (dom.canvasSubtitle) {
+        dom.canvasSubtitle.value = '';
+        dom.canvasSubtitle.placeholder = 'Add a subtitle...';
+        dom.canvasSubtitle.style.height = 'auto';
+      }
+      if (dom.canvasBody) {
+        dom.canvasBody.innerHTML = '';
+      }
+
+      removeSoundtrackStrip();
+
+      const publishBtnSpan = dom.canvasPublishBtn ? dom.canvasPublishBtn.querySelector('span') : null;
+      if (publishBtnSpan) publishBtnSpan.textContent = 'Publish';
     }
-    if (dom.canvasSoundtrackStrip) dom.canvasSoundtrackStrip.style.display = 'none';
-    if (dom.canvasSoundtrackToggle) dom.canvasSoundtrackToggle.classList.remove('active');
 
     if (dom.canvasPreviewBtn) {
       dom.canvasPreviewBtn.textContent = 'Preview';
@@ -1372,14 +1459,21 @@ window.ZLog = window.ZLog || {};
     document.body.style.overflow = 'hidden';
 
     setTimeout(() => {
-      if (dom.canvasTitle) dom.canvasTitle.focus();
+      if (entryToEdit && dom.canvasBody) {
+        dom.canvasBody.focus();
+      } else if (dom.canvasTitle) {
+        dom.canvasTitle.focus();
+      }
     }, 200);
   }
 
   function closeEditor() {
     dom.editorOverlay.classList.remove('open');
     editorOpen = false;
+    editingPostId = null;
     document.body.style.overflow = '';
+    const publishBtnSpan = dom.canvasPublishBtn ? dom.canvasPublishBtn.querySelector('span') : null;
+    if (publishBtnSpan) publishBtnSpan.textContent = 'Publish';
   }
 
   function handleCanvasPublish() {
@@ -1454,22 +1548,32 @@ window.ZLog = window.ZLog || {};
       reading_time: readingTime
     };
 
+    const isEdit = Boolean(editingPostId);
+    const targetId = editingPostId;
+
     const publishBtnSpan = dom.canvasPublishBtn ? dom.canvasPublishBtn.querySelector('span') : null;
     if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = true;
-    if (publishBtnSpan) publishBtnSpan.textContent = 'Publishing…';
+    if (publishBtnSpan) publishBtnSpan.textContent = isEdit ? 'Saving…' : 'Publishing…';
 
-    Data.insertLivePost(entry).then(() => {
+    const savePromise = isEdit
+      ? Data.updateLivePost(targetId, entry)
+      : Data.insertLivePost(entry);
+
+    savePromise.then(() => {
       closeEditor();
       syncAndRenderPosts();
-      showToast('Entry published live to Supabase!');
+      if (isEdit && readerOpen && dom.singleEntryView && dom.singleEntryView.style.display !== 'none') {
+        openReader(targetId, false);
+      }
+      showToast(isEdit ? 'Entry updated in Supabase!' : 'Entry published live to Supabase!');
     }).catch(err => {
-      console.error('Publish error:', err);
+      console.error('Save error:', err);
       if (!err || !err._alerted) {
-        alert('Supabase Insert Error: ' + (err && err.message ? err.message : 'Failed to publish entry to Supabase.'));
+        alert('Supabase Save Error: ' + (err && err.message ? err.message : 'Failed to save entry.'));
       }
     }).finally(() => {
       if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = false;
-      if (publishBtnSpan) publishBtnSpan.textContent = 'Publish';
+      if (publishBtnSpan) publishBtnSpan.textContent = isEdit ? 'Save Changes' : 'Publish';
     });
   }
 
@@ -2262,12 +2366,18 @@ window.ZLog = window.ZLog || {};
     initCanvasEvents();
 
     // Status modal
-    dom.editStatusBtn.addEventListener('click', openStatusModal);
-    $('#status-modal-cancel').addEventListener('click', closeStatusModal);
-    $('#status-modal-save').addEventListener('click', saveStatus);
-    dom.statusModal.addEventListener('click', (e) => {
-      if (e.target === dom.statusModal) closeStatusModal();
-    });
+    if (dom.editStatusBtn) {
+      dom.editStatusBtn.addEventListener('click', handleEditStatusClick);
+    }
+    const smCancel = $('#status-modal-cancel');
+    if (smCancel) smCancel.addEventListener('click', closeStatusModal);
+    const smSave = $('#status-modal-save');
+    if (smSave) smSave.addEventListener('click', saveStatus);
+    if (dom.statusModal) {
+      dom.statusModal.addEventListener('click', (e) => {
+        if (e.target === dom.statusModal) closeStatusModal();
+      });
+    }
 
     // Mini player & direct audio
     if (dom.miniCloseBtn) {
