@@ -744,7 +744,7 @@ window.ZLog = window.ZLog || {};
         </div>
         <div class="currently-row">
           <span class="currently-tag">DAYDREAMING OF</span>
-          <span class="currently-text">${escapeHtml(status.daydreaming || 'Quiet greenhouse afternoons & sunlit ceramic cups')}</span>
+          <span class="currently-text">${escapeHtml((status && status.daydreaming !== undefined && status.daydreaming !== null) ? status.daydreaming : 'Quiet greenhouse afternoons & sunlit ceramic cups')}</span>
         </div>
       `;
     }
@@ -771,7 +771,7 @@ window.ZLog = window.ZLog || {};
     const status = Data.loadStatus();
     if ($('#sm-reading')) $('#sm-reading').value         = status.reading || '';
     if ($('#sm-repeat')) $('#sm-repeat').value          = status.onRepeat || '';
-    if ($('#sm-daydreaming')) $('#sm-daydreaming').value = status.daydreaming || '';
+    if ($('#sm-daydreaming')) $('#sm-daydreaming').value = (status && status.daydreaming !== undefined && status.daydreaming !== null) ? status.daydreaming : '';
     dom.statusModal.classList.add('open');
   }
 
@@ -797,7 +797,8 @@ window.ZLog = window.ZLog || {};
       await Data.saveLiveStatus(newStatus);
       showToast('Sidebar status synced to Supabase.');
     } catch (e) {
-      showToast('Status saved locally.');
+      console.error('Failed to sync status to Supabase:', e);
+      showToast('Error syncing status to Supabase: ' + (e.message || 'Check connection'));
     }
   }
 

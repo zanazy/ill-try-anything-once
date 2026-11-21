@@ -164,7 +164,7 @@ window.ZLog = window.ZLog || {};
         if ('dailyTally' in parsed) { delete parsed.dailyTally; changed = true; }
         if ('lastfmUser' in parsed) { delete parsed.lastfmUser; changed = true; }
         if ('lastfmApiKey' in parsed) { delete parsed.lastfmApiKey; changed = true; }
-        if (!parsed.daydreaming) {
+        if (parsed.daydreaming === undefined || parsed.daydreaming === null) {
           parsed.daydreaming = defaultStatus.daydreaming;
           changed = true;
         }
@@ -394,10 +394,30 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
 
       if (data) {
         const currentLocal = loadStatus();
+        let sbDaydreaming = undefined;
+        if (data.daydreaming_of !== undefined && data.daydreaming_of !== null) {
+          sbDaydreaming = data.daydreaming_of;
+        } else if (data.daydreaming !== undefined && data.daydreaming !== null) {
+          sbDaydreaming = data.daydreaming;
+        }
+
+        const localDaydreaming = (currentLocal && currentLocal.daydreaming !== undefined && currentLocal.daydreaming !== null)
+          ? currentLocal.daydreaming
+          : undefined;
+
+        let resolvedDaydreaming;
+        if (sbDaydreaming !== undefined) {
+          resolvedDaydreaming = sbDaydreaming;
+        } else if (localDaydreaming !== undefined) {
+          resolvedDaydreaming = localDaydreaming;
+        } else {
+          resolvedDaydreaming = defaultStatus.daydreaming;
+        }
+
         const merged = {
-          reading:     data.reading || currentLocal.reading || defaultStatus.reading,
+          reading:     (data.reading !== undefined && data.reading !== null) ? data.reading : (currentLocal.reading || defaultStatus.reading),
           onRepeat:    data.on_repeat || data.onRepeat || currentLocal.onRepeat || defaultStatus.onRepeat,
-          daydreaming: data.daydreaming || currentLocal.daydreaming || defaultStatus.daydreaming
+          daydreaming: resolvedDaydreaming
         };
         saveStatus(merged);
         return merged;
@@ -411,19 +431,26 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
   async function saveLiveStatus(newStatus) {
     saveStatus(newStatus);
     const sb = getSupabase();
-    if (!sb) return;
+    if (!sb) {
+      const err = new Error('Supabase client is not connected.');
+      alert('Supabase Status Update Error: ' + err.message);
+      throw err;
+    }
 
     try {
       const row = {
         id: 1,
-        reading:   newStatus.reading || '',
-        on_repeat: newStatus.onRepeat || ''
+        reading:        typeof newStatus.reading === 'string' ? newStatus.reading : '',
+        on_repeat:      typeof newStatus.onRepeat === 'string' ? newStatus.onRepeat : '',
+        daydreaming_of: typeof newStatus.daydreaming === 'string' ? newStatus.daydreaming : ''
       };
       const { error } = await sb.from('site_status').upsert(row);
       if (error) {
         console.error('ZLog: Supabase site_status upsert error:', error);
         alert('Supabase Status Update Error: ' + error.message);
-        throw error;
+        const err = new Error(error.message || 'Supabase site_status upsert failed');
+        err.originalError = error;
+        throw err;
       }
     } catch (err) {
       console.warn('ZLog: Supabase site_status save error:', err);
