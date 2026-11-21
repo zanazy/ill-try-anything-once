@@ -333,6 +333,31 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
 
   function mapPostRow(row) {
     if (!row) return null;
+    let playlist = [];
+    let noteText = row.song_note || '';
+
+    // Check if song_note contains JSON playlist
+    if (row.song_note && typeof row.song_note === 'string' && (row.song_note.trim().startsWith('{') || row.song_note.trim().startsWith('['))) {
+      try {
+        const parsed = JSON.parse(row.song_note);
+        if (Array.isArray(parsed)) {
+          playlist = parsed;
+          noteText = '';
+        } else if (parsed && Array.isArray(parsed.playlist)) {
+          playlist = parsed.playlist;
+          noteText = parsed.note || '';
+        }
+      } catch (_) {}
+    }
+
+    if (!playlist.length && row.playlist) {
+      if (Array.isArray(row.playlist)) {
+        playlist = row.playlist;
+      } else if (typeof row.playlist === 'string') {
+        try { playlist = JSON.parse(row.playlist); } catch (_) {}
+      }
+    }
+
     let soundtrack = null;
     if (row.soundtrack) {
       try {
@@ -341,19 +366,31 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
         soundtrack = null;
       }
     }
-    const songUrl = row.song_url || (soundtrack && soundtrack.url) || null;
-    if (soundtrack) {
-      if (songUrl && !soundtrack.url) {
-        soundtrack.url = songUrl;
+
+    const songUrl = row.song_url || (soundtrack && soundtrack.url) || (playlist[0] && playlist[0].url) || null;
+
+    if (!playlist.length) {
+      if (soundtrack) {
+        playlist = [{
+          title: soundtrack.title || row.song_title || 'Soundtrack',
+          artist: soundtrack.artist || row.song_artist || '',
+          note: soundtrack.note || noteText || '',
+          url: songUrl
+        }];
+      } else if (songUrl || row.song_title) {
+        playlist = [{
+          title: row.song_title || 'Soundtrack',
+          artist: row.song_artist || '',
+          note: noteText || '',
+          url: songUrl
+        }];
       }
-    } else if (songUrl || row.song_title) {
-      soundtrack = {
-        title: row.song_title || '',
-        artist: row.song_artist || '',
-        note: row.song_note || '',
-        url: songUrl
-      };
     }
+
+    if (playlist.length > 0) {
+      soundtrack = playlist[0];
+    }
+
     let tags = [];
     if (row.tag) {
       tags = [row.tag];
@@ -376,10 +413,11 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       reading_time: row.reading_time || readingTime,
       coverGradient: row.cover_gradient || row.coverGradient || null,
       soundtrack: soundtrack,
+      playlist: playlist,
       song_url: songUrl,
       song_title: row.song_title || (soundtrack ? soundtrack.title : ''),
       song_artist: row.song_artist || (soundtrack ? soundtrack.artist : ''),
-      song_note: row.song_note || (soundtrack ? soundtrack.note : ''),
+      song_note: noteText,
       body: bodyContent,
       content: bodyContent,
       published: row.published !== undefined ? row.published : true,
@@ -565,11 +603,16 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       throw err;
     }
 
-    const soundtrack = entry.soundtrack || {};
-    const songUrl = entry.song_url || soundtrack.url || null;
-    const songTitle = soundtrack.title || entry.song_title || '';
-    const songArtist = soundtrack.artist || entry.song_artist || '';
-    const songNote = soundtrack.note || entry.song_note || '';
+    const playlist = (entry.playlist && Array.isArray(entry.playlist)) ? entry.playlist : [];
+    const firstTrack = playlist[0] || entry.soundtrack || {};
+    const songUrl = firstTrack.url || entry.song_url || null;
+    const songTitle = firstTrack.title || entry.song_title || '';
+    const songArtist = firstTrack.artist || entry.song_artist || '';
+    let songNote = firstTrack.note || entry.song_note || '';
+
+    if (playlist.length > 1) {
+      songNote = JSON.stringify({ playlist: playlist, note: firstTrack.note || '' });
+    }
 
     // Pick tag (singular) from tags array or tag property
     const tag = (entry.tags && entry.tags.length > 0) ? entry.tags[0] : (entry.tag || '');
@@ -626,11 +669,16 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       return updateEntry(id, entry);
     }
 
-    const soundtrack = entry.soundtrack || {};
-    const songUrl = entry.song_url || soundtrack.url || null;
-    const songTitle = soundtrack.title || entry.song_title || '';
-    const songArtist = soundtrack.artist || entry.song_artist || '';
-    const songNote = soundtrack.note || entry.song_note || '';
+    const playlist = (entry.playlist && Array.isArray(entry.playlist)) ? entry.playlist : [];
+    const firstTrack = playlist[0] || entry.soundtrack || {};
+    const songUrl = firstTrack.url || entry.song_url || null;
+    const songTitle = firstTrack.title || entry.song_title || '';
+    const songArtist = firstTrack.artist || entry.song_artist || '';
+    let songNote = firstTrack.note || entry.song_note || '';
+
+    if (playlist.length > 1) {
+      songNote = JSON.stringify({ playlist: playlist, note: firstTrack.note || '' });
+    }
     const tag = (entry.tags && entry.tags.length > 0) ? entry.tags[0] : (entry.tag || '');
 
     // ONLY send columns that exist in public.posts

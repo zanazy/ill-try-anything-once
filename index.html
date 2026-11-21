@@ -428,23 +428,24 @@
             </div>
           </div>
 
-          <!-- Collapsible Inline Soundtrack Strip -->
+          <!-- Collapsible Inline Soundtrack / Playlist Strip -->
           <div class="canvas-soundtrack-strip" id="canvas-soundtrack-strip" style="display:none;">
             <div class="canvas-soundtrack-header">
               <span class="canvas-soundtrack-label">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-                Attach Soundtrack
+                Attach Soundtrack / Playlist
               </span>
               <button type="button" class="canvas-soundtrack-close" id="canvas-soundtrack-close" title="Remove soundtrack" aria-label="Remove soundtrack">×</button>
             </div>
-            <div class="canvas-soundtrack-inputs">
-              <input type="url" id="canvas-track-url" class="canvas-inline-input" placeholder="Paste YouTube, YouTube Music, Spotify, SoundCloud, or direct .mp3 link…">
-              <div class="canvas-soundtrack-meta-row">
-                <input type="text" id="canvas-track-title" class="canvas-inline-input small" placeholder="Song Title">
-                <input type="text" id="canvas-track-artist" class="canvas-inline-input small" placeholder="Artist">
-              </div>
-              <input type="text" id="canvas-track-note" class="canvas-inline-input note" placeholder="Why this song fits (optional)">
-              <span class="canvas-soundtrack-hint" id="canvas-track-hint">Auto-fills Song Title and Artist when link is pasted</span>
+            <div class="canvas-playlist-list" id="canvas-playlist-list">
+              <!-- Rendered dynamically by renderCanvasPlaylist() -->
+            </div>
+            <div class="canvas-playlist-footer">
+              <button type="button" class="canvas-add-song-btn" id="canvas-add-song-btn">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Add song to playlist</span>
+              </button>
+              <span class="canvas-soundtrack-hint">Paste link to auto-fill title & artist</span>
             </div>
           </div>
 
@@ -651,8 +652,20 @@
         <div class="direct-audio-box" id="direct-audio-box" style="display:none;">
           <audio id="direct-audio-element" preload="metadata"></audio>
           <div class="direct-audio-controls">
+            <button class="direct-nav-btn" id="direct-prev-btn" aria-label="Previous track" title="Previous track" style="display:none;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="19 20 9 12 19 4 19 20" fill="currentColor"></polygon>
+                <line x1="5" y1="19" x2="5" y2="5"></line>
+              </svg>
+            </button>
             <button class="direct-play-btn" id="direct-play-btn" aria-label="Play or Pause audio">
               <svg class="icon-play" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            </button>
+            <button class="direct-nav-btn" id="direct-next-btn" aria-label="Next track" title="Next track" style="display:none;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="5 4 15 12 5 20 5 4" fill="currentColor"></polygon>
+                <line x1="19" y1="5" x2="19" y2="19"></line>
+              </svg>
             </button>
             <span class="audio-time" id="audio-time-current">0:00</span>
             <input type="range" class="audio-scrubber" id="audio-scrubber" min="0" max="100" value="0" step="0.1" aria-label="Audio scrubber">
