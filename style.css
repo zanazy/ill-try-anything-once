@@ -721,6 +721,10 @@ textarea {
 
 .torn-note-header {
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .torn-note-body {
@@ -1545,6 +1549,154 @@ textarea {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(140, 194, 155, 0);
   }
+}
+
+/* ── Polaroid Header Action (Edit Button) ── */
+.polaroid-header-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 8;
+}
+
+body.author-mode .torn-note-quote,
+body.author-mode .torn-note-desc,
+body.author-mode .polaroid-quote-strip {
+  cursor: pointer;
+}
+
+body.author-mode .torn-note-quote:hover,
+body.author-mode .torn-note-desc:hover,
+body.author-mode .polaroid-quote-strip:hover {
+  outline: 1px dashed rgba(83, 126, 96, 0.4);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ── Scrapbook Hero Edit Modal ── */
+.hero-modal-box {
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.hero-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.hero-modal-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-family: var(--font-base);
+  color: var(--ink);
+}
+
+.hero-modal-desc {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.hero-modal-section-title {
+  font-family: var(--font-base);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.hero-modal-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-base);
+  font-size: 13px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.hero-modal-textarea:focus {
+  border-color: var(--accent);
+}
+
+.hero-photo-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.hero-photo-input-group input {
+  flex: 1;
+}
+
+.hero-file-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-base);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.hero-file-upload-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hero-photo-preview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.hero-photo-preview-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.hero-photo-reset-btn {
+  background: none;
+  border: none;
+  font-family: var(--font-base);
+  font-size: 11px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.hero-photo-reset-btn:hover {
+  color: var(--accent);
 }
 
 /* ── Status Modal & Connect Last.fm Section ── */
@@ -3633,6 +3785,8 @@ div:focus-visible,
 body:not(.author-mode) .author-only,
 body:not(.author-mode) #write-btn,
 body:not(.author-mode) #edit-status-btn,
+body:not(.author-mode) #edit-hero-note-btn,
+body:not(.author-mode) #edit-polaroid-btn,
 body:not(.author-mode) .entry-edit-pill,
 body:not(.author-mode) .reader-edit-btn,
 body:not(.author-mode) .reader-delete-btn,

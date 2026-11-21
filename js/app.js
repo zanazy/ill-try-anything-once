@@ -101,6 +101,13 @@ window.ZLog = window.ZLog || {};
     dom.themeIcon       = $('#theme-icon');
     dom.statusModal     = $('#status-modal');
     dom.editStatusBtn   = $('#edit-status-btn');
+    dom.heroModal       = $('#hero-modal');
+    dom.editHeroNoteBtn = $('#edit-hero-note-btn');
+    dom.editPolaroidBtn = $('#edit-polaroid-btn');
+    dom.heroQuoteText   = $('#hero-quote-text');
+    dom.heroDescText    = $('#hero-desc-text');
+    dom.polaroidPhotoImg= $('#polaroid-photo-img');
+    dom.polaroidQuoteText = $('#polaroid-quote-text');
     dom.miniPlayer      = $('#mini-player');
     dom.miniVinyl       = $('#mini-vinyl');
     dom.miniTitle       = $('#mini-title');
@@ -396,6 +403,7 @@ window.ZLog = window.ZLog || {};
   async function syncLiveStatus() {
     await Data.fetchLiveStatus();
     renderCurrently();
+    renderHero();
   }
 
   /* ═══════════════════════════════════════
@@ -752,6 +760,98 @@ window.ZLog = window.ZLog || {};
           <span class="currently-text">${escapeHtml((status && status.daydreaming !== undefined && status.daydreaming !== null) ? status.daydreaming : 'Quiet greenhouse afternoons & sunlit ceramic cups')}</span>
         </div>
       `;
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     SCRAPBOOK HERO (INTRO NOTE & POLAROID)
+     ═══════════════════════════════════════ */
+
+  function renderHero() {
+    const hero = Data.loadHero();
+    if (dom.heroQuoteText) {
+      dom.heroQuoteText.innerHTML = escapeHtml(hero.quote || Data.defaultHero.quote).replace(/\n/g, '<br>');
+    }
+    if (dom.heroDescText) {
+      dom.heroDescText.textContent = hero.desc || Data.defaultHero.desc;
+    }
+    if (dom.polaroidPhotoImg) {
+      dom.polaroidPhotoImg.src = hero.polaroidImg || Data.defaultHero.polaroidImg;
+    }
+    if (dom.polaroidQuoteText) {
+      dom.polaroidQuoteText.textContent = hero.polaroidQuote || Data.defaultHero.polaroidQuote;
+    }
+  }
+
+  function handleEditHeroClick(e, focusTarget = 'note') {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const isAuthed = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
+    if (!isAuthed) {
+      openAuthorModal();
+      return;
+    }
+    openHeroModal(focusTarget);
+  }
+
+  function openHeroModal(focusTarget = 'note') {
+    const hero = Data.loadHero();
+    if ($('#hm-quote')) $('#hm-quote').value = hero.quote || '';
+    if ($('#hm-desc')) $('#hm-desc').value = hero.desc || '';
+    if ($('#hm-photo-url')) $('#hm-photo-url').value = hero.polaroidImg || '';
+    if ($('#hm-polaroid-quote')) $('#hm-polaroid-quote').value = hero.polaroidQuote || '';
+
+    const previewWrap = $('#hm-photo-preview-wrap');
+    const previewImg = $('#hm-photo-preview');
+    if (previewWrap && previewImg) {
+      if (hero.polaroidImg) {
+        previewImg.src = hero.polaroidImg;
+        previewWrap.style.display = 'flex';
+      } else {
+        previewWrap.style.display = 'none';
+      }
+    }
+
+    if (dom.heroModal) dom.heroModal.classList.add('open');
+
+    if (focusTarget === 'polaroid' && $('#hm-photo-url')) {
+      setTimeout(() => $('#hm-photo-url').focus(), 80);
+    } else if ($('#hm-quote')) {
+      setTimeout(() => $('#hm-quote').focus(), 80);
+    }
+  }
+
+  function closeHeroModal() {
+    if (dom.heroModal) dom.heroModal.classList.remove('open');
+  }
+
+  async function saveHeroData(e) {
+    if (e) e.preventDefault();
+
+    const quote = $('#hm-quote') ? $('#hm-quote').value.trim() : '';
+    const desc = $('#hm-desc') ? $('#hm-desc').value.trim() : '';
+    const photoUrl = $('#hm-photo-url') ? $('#hm-photo-url').value.trim() : '';
+    const polQuote = $('#hm-polaroid-quote') ? $('#hm-polaroid-quote').value.trim() : '';
+
+    const newHero = {
+      quote: quote || Data.defaultHero.quote,
+      desc: desc || Data.defaultHero.desc,
+      polaroidImg: photoUrl || Data.defaultHero.polaroidImg,
+      polaroidQuote: polQuote || Data.defaultHero.polaroidQuote
+    };
+
+    closeHeroModal();
+    Data.saveHero(newHero);
+    renderHero();
+
+    try {
+      await Data.saveLiveHero(newHero);
+      showToast('Scrapbook cards updated & synced!');
+    } catch (err) {
+      console.error('Failed to sync hero to Supabase:', err);
+      showToast('Saved locally. Supabase sync error: ' + (err.message || 'Check connection'));
     }
   }
 
@@ -2567,6 +2667,95 @@ window.ZLog = window.ZLog || {};
     // Editorial Substack Canvas
     initCanvasEvents();
 
+    // Hero Modal & Edit Buttons
+    if (dom.editHeroNoteBtn) {
+      dom.editHeroNoteBtn.addEventListener('click', (e) => handleEditHeroClick(e, 'note'));
+    }
+    if (dom.editPolaroidBtn) {
+      dom.editPolaroidBtn.addEventListener('click', (e) => handleEditHeroClick(e, 'polaroid'));
+    }
+    const hmCancel = $('#hero-modal-cancel');
+    if (hmCancel) hmCancel.addEventListener('click', closeHeroModal);
+    const hmForm = $('#hero-edit-form');
+    if (hmForm) hmForm.addEventListener('submit', saveHeroData);
+
+    // Hero Photo File Upload & URL preview
+    const photoFileIn = $('#hm-photo-file');
+    if (photoFileIn) {
+      photoFileIn.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const dataUrl = evt.target.result;
+          if ($('#hm-photo-url')) $('#hm-photo-url').value = dataUrl;
+          const previewWrap = $('#hm-photo-preview-wrap');
+          const previewImg = $('#hm-photo-preview');
+          if (previewWrap && previewImg) {
+            previewImg.src = dataUrl;
+            previewWrap.style.display = 'flex';
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    const photoUrlIn = $('#hm-photo-url');
+    if (photoUrlIn) {
+      photoUrlIn.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        const previewWrap = $('#hm-photo-preview-wrap');
+        const previewImg = $('#hm-photo-preview');
+        if (previewWrap && previewImg) {
+          if (val) {
+            previewImg.src = val;
+            previewWrap.style.display = 'flex';
+          } else {
+            previewWrap.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    const photoResetBtn = $('#hm-photo-reset');
+    if (photoResetBtn) {
+      photoResetBtn.addEventListener('click', () => {
+        if ($('#hm-photo-url')) $('#hm-photo-url').value = Data.defaultHero.polaroidImg;
+        const previewImg = $('#hm-photo-preview');
+        if (previewImg) previewImg.src = Data.defaultHero.polaroidImg;
+      });
+    }
+
+    // Inline double-click triggers when in author mode
+    if (dom.heroQuoteText) {
+      dom.heroQuoteText.addEventListener('dblclick', (e) => {
+        if (Data.isAuthorMode() || (currentAuthSession && currentAuthSession.user)) {
+          handleEditHeroClick(e, 'note');
+        }
+      });
+    }
+    if (dom.heroDescText) {
+      dom.heroDescText.addEventListener('dblclick', (e) => {
+        if (Data.isAuthorMode() || (currentAuthSession && currentAuthSession.user)) {
+          handleEditHeroClick(e, 'note');
+        }
+      });
+    }
+    if (dom.polaroidPhotoImg) {
+      dom.polaroidPhotoImg.addEventListener('dblclick', (e) => {
+        if (Data.isAuthorMode() || (currentAuthSession && currentAuthSession.user)) {
+          handleEditHeroClick(e, 'polaroid');
+        }
+      });
+    }
+    if (dom.polaroidQuoteText) {
+      dom.polaroidQuoteText.addEventListener('dblclick', (e) => {
+        if (Data.isAuthorMode() || (currentAuthSession && currentAuthSession.user)) {
+          handleEditHeroClick(e, 'polaroid');
+        }
+      });
+    }
+
     // Status modal
     if (dom.editStatusBtn) {
       dom.editStatusBtn.addEventListener('click', handleEditStatusClick);
@@ -2724,6 +2913,7 @@ window.ZLog = window.ZLog || {};
     renderFilters();
     renderFeed();
     renderCurrently();
+    renderHero();
     bindEvents();
 
     // Mobile user-gesture unlock for audio & YouTube API

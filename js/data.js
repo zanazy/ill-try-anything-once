@@ -10,6 +10,7 @@ window.ZLog = window.ZLog || {};
 
   const ENTRIES_KEY     = 'zlog_entries';
   const STATUS_KEY      = 'zlog_status';
+  const HERO_KEY        = 'zlog_hero';
   const THEME_KEY       = 'zlog_theme';
   const FILTER_KEY      = 'zlog_filter';
   const LASTFM_KEY      = 'zlog_lastfm';
@@ -22,6 +23,14 @@ window.ZLog = window.ZLog || {};
     onRepeat:     'Where’s My Love — SYML',
     crafting:     'Chunky knit pouch with sage yarn',
     daydreaming:  'Quiet greenhouse afternoons & sunlit ceramic cups'
+  };
+
+  /* ── Default Scrapbook Hero content ── */
+  const defaultHero = {
+    quote:        'Why not try it all,\nif you only remember it once?',
+    desc:         'a quiet digital sketchbook for nocturnal thoughts, half-finished crafts, and sounds that stay on repeat.',
+    polaroidImg:  'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=800&q=80',
+    polaroidQuote: '“The little things? The little moments? They aren’t little.”'
   };
 
   /* ── Quick Tag definitions (Feed Filter Bar & Editor) ── */
@@ -187,6 +196,30 @@ window.ZLog = window.ZLog || {};
 
   function saveStatus(status) {
     localStorage.setItem(STATUS_KEY, JSON.stringify(status));
+  }
+
+  /* ── Scrapbook Hero Content (Intro Note & Polaroid) ── */
+
+  function loadHero() {
+    try {
+      const raw = localStorage.getItem(HERO_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          quote:         (parsed && parsed.quote !== undefined && parsed.quote !== null) ? parsed.quote : defaultHero.quote,
+          desc:          (parsed && parsed.desc !== undefined && parsed.desc !== null) ? parsed.desc : defaultHero.desc,
+          polaroidImg:   (parsed && parsed.polaroidImg) ? parsed.polaroidImg : defaultHero.polaroidImg,
+          polaroidQuote: (parsed && parsed.polaroidQuote !== undefined && parsed.polaroidQuote !== null) ? parsed.polaroidQuote : defaultHero.polaroidQuote
+        };
+      }
+    } catch (e) {}
+    return { ...defaultHero };
+  }
+
+  function saveHero(hero) {
+    try {
+      localStorage.setItem(HERO_KEY, JSON.stringify(hero || defaultHero));
+    } catch (e) {}
   }
 
   /* ── Last.fm Settings ── */
@@ -425,6 +458,22 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
           daydreaming: resolvedDaydreaming
         };
         saveStatus(merged);
+
+        // Parse Scrapbook Hero configuration from daily_tally column if present
+        if (data.daily_tally) {
+          try {
+            const parsedHero = JSON.parse(data.daily_tally);
+            if (parsedHero && typeof parsedHero === 'object' && (parsedHero.quote || parsedHero.polaroidImg || parsedHero.desc || parsedHero.polaroidQuote)) {
+              saveHero({
+                quote:         parsedHero.quote || defaultHero.quote,
+                desc:          parsedHero.desc || defaultHero.desc,
+                polaroidImg:   parsedHero.polaroidImg || defaultHero.polaroidImg,
+                polaroidQuote: parsedHero.polaroidQuote || defaultHero.polaroidQuote
+              });
+            }
+          } catch (e) {}
+        }
+
         return merged;
       }
     } catch (err) {
@@ -443,12 +492,14 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     }
 
     try {
+      const hero = loadHero();
       const row = {
         id: 1,
         reading:        typeof newStatus.reading === 'string' ? newStatus.reading : '',
         on_repeat:      typeof newStatus.onRepeat === 'string' ? newStatus.onRepeat : '',
         crafting:       typeof newStatus.crafting === 'string' ? newStatus.crafting : '',
-        daydreaming_of: typeof newStatus.daydreaming === 'string' ? newStatus.daydreaming : ''
+        daydreaming_of: typeof newStatus.daydreaming === 'string' ? newStatus.daydreaming : '',
+        daily_tally:    JSON.stringify(hero)
       };
       const { error } = await sb.from('site_status').upsert(row);
       if (error) {
@@ -462,6 +513,39 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       console.warn('ZLog: Supabase site_status save error:', err);
       throw err;
     }
+  }
+
+  async function saveLiveHero(newHero) {
+    saveHero(newHero);
+    const sb = getSupabase();
+    if (!sb) {
+      return newHero;
+    }
+
+    try {
+      const status = loadStatus();
+      const heroJson = JSON.stringify(newHero);
+      const row = {
+        id: 1,
+        reading:        typeof status.reading === 'string' ? status.reading : '',
+        on_repeat:      typeof status.onRepeat === 'string' ? status.onRepeat : '',
+        crafting:       typeof status.crafting === 'string' ? status.crafting : '',
+        daydreaming_of: typeof status.daydreaming === 'string' ? status.daydreaming : '',
+        daily_tally:    heroJson
+      };
+      const { error } = await sb.from('site_status').upsert(row);
+      if (error) {
+        console.error('ZLog: Supabase hero upsert error:', error);
+        alert('Supabase Hero Update Error: ' + error.message);
+        const err = new Error(error.message || 'Supabase hero update failed');
+        err.originalError = error;
+        throw err;
+      }
+    } catch (err) {
+      console.warn('ZLog: Supabase hero save error:', err);
+      throw err;
+    }
+    return newHero;
   }
 
   async function insertLivePost(entry) {
@@ -723,6 +807,10 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     getMightDeleteLaterMap,
     loadStatus,
     saveStatus,
+    loadHero,
+    saveHero,
+    saveLiveHero,
+    defaultHero,
     loadLastFm,
     saveLastFm,
     isAuthorMode,
