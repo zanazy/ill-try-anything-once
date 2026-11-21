@@ -1829,7 +1829,43 @@ window.ZLog = window.ZLog || {};
     if (isCanvasPreviewActive) return;
     if (!dom.canvasBody) return;
     dom.canvasBody.focus();
-    document.execCommand(command, false, value);
+    try {
+      document.execCommand(command, false, value);
+    } catch (err) {
+      console.warn('execCommand error:', err);
+    }
+    updateCanvasToolbarState();
+  }
+
+  function updateCanvasToolbarState() {
+    if (!dom.canvasBody || isCanvasPreviewActive) return;
+
+    // Direct command buttons (bold, italic, strikeThrough, justifyLeft, justifyCenter, justifyRight, justifyFull)
+    $$('.canvas-format-btn[data-command]').forEach(btn => {
+      const cmd = btn.dataset.command;
+      try {
+        if (document.queryCommandState && document.queryCommandState(cmd)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      } catch (e) {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Also update block style select (p, h2, h3)
+    if (dom.canvasFormatBlock) {
+      try {
+        const blockVal = document.queryCommandValue('formatBlock');
+        if (blockVal) {
+          const clean = blockVal.toLowerCase().replace(/[<>]/g, '');
+          if (['p', 'h2', 'h3'].includes(clean)) {
+            dom.canvasFormatBlock.value = clean;
+          }
+        }
+      } catch (e) {}
+    }
   }
 
   function handleCanvasCode() {
@@ -3515,11 +3551,28 @@ window.ZLog = window.ZLog || {};
       });
     }
 
-    // Direct command buttons (bold, italic, strikeThrough, lists)
+    // Direct command buttons (bold, italic, strikeThrough, lists, text alignment)
     $$('.canvas-format-btn[data-command]').forEach(btn => {
       btn.addEventListener('mousedown', (e) => {
         e.preventDefault();
         const cmd = btn.dataset.command;
+
+        // If user was focused in Title or Subtitle textarea when clicking alignment:
+        if (cmd.startsWith('justify')) {
+          if (document.activeElement === dom.canvasTitle) {
+            const align = cmd === 'justifyCenter' ? 'center' : cmd === 'justifyRight' ? 'right' : cmd === 'justifyFull' ? 'justify' : 'left';
+            dom.canvasTitle.style.textAlign = align;
+            updateCanvasToolbarState();
+            return;
+          }
+          if (document.activeElement === dom.canvasSubtitle) {
+            const align = cmd === 'justifyCenter' ? 'center' : cmd === 'justifyRight' ? 'right' : cmd === 'justifyFull' ? 'justify' : 'left';
+            dom.canvasSubtitle.style.textAlign = align;
+            updateCanvasToolbarState();
+            return;
+          }
+        }
+
         execCanvasCommand(cmd);
       });
     });
@@ -3809,7 +3862,19 @@ window.ZLog = window.ZLog || {};
           }
         }
       });
+
+      // Keep toolbar active state synchronized on selection changes
+      dom.canvasBody.addEventListener('keyup', updateCanvasToolbarState);
+      dom.canvasBody.addEventListener('mouseup', updateCanvasToolbarState);
     }
+
+    document.addEventListener('selectionchange', () => {
+      const sel = window.getSelection();
+      if (!sel || !sel.anchorNode || !dom.canvasBody) return;
+      if (dom.canvasBody.contains(sel.anchorNode) || dom.canvasBody === sel.anchorNode) {
+        updateCanvasToolbarState();
+      }
+    });
 
     // Preview button
     if (dom.canvasPreviewBtn) {

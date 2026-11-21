@@ -2443,6 +2443,48 @@ body.author-mode .polaroid-quote-strip:hover {
   font-weight: 500;
 }
 
+/* Reset drop-cap on centered, right-aligned, or justified initial paragraphs */
+.reader-body > p[style*="center"]:first-of-type::first-letter,
+.reader-body > p[style*="right"]:first-of-type::first-letter,
+.reader-body > p[align="center"]:first-of-type::first-letter,
+.reader-body > p[align="right"]:first-of-type::first-letter,
+.canvas-preview-body > p[style*="center"]:first-of-type::first-letter,
+.canvas-preview-body > p[style*="right"]:first-of-type::first-letter,
+.canvas-preview-body > p[align="center"]:first-of-type::first-letter,
+.canvas-preview-body > p[align="right"]:first-of-type::first-letter {
+  float: none !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-family: inherit !important;
+}
+
+/* Cross-browser alignment support in canvas editor & reader */
+.canvas-body [align="left"],
+.reader-body [align="left"],
+.canvas-preview-body [align="left"] {
+  text-align: left;
+}
+
+.canvas-body [align="center"],
+.reader-body [align="center"],
+.canvas-preview-body [align="center"] {
+  text-align: center;
+}
+
+.canvas-body [align="right"],
+.reader-body [align="right"],
+.canvas-preview-body [align="right"] {
+  text-align: right;
+}
+
+.canvas-body [align="justify"],
+.reader-body [align="justify"],
+.canvas-preview-body [align="justify"] {
+  text-align: justify;
+}
+
 .reader-body blockquote {
   font-family: var(--font-body);
   font-style: normal;
@@ -2942,6 +2984,29 @@ body.author-mode .polaroid-quote-strip:hover {
   background: #D4E6CD;
   border: 1px solid rgba(83, 126, 96, 0.4);
   display: inline-block;
+}
+
+/* ── Segmented Text Alignment Group in Topbar ── */
+.canvas-align-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(220, 229, 213, 0.28);
+  padding: 1px 2px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .canvas-align-group {
+  background: rgba(38, 53, 43, 0.45);
+  border-color: #26352B;
+}
+
+.canvas-align-group .canvas-format-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
 }
 
 .canvas-topbar-right {
