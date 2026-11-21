@@ -710,7 +710,7 @@ window.ZLog = window.ZLog || {};
       musicArtist = parts[1] || 'Unknown';
     } else {
       musicTitle = rawRepeat;
-      musicArtist = 'Zee’s Playlist';
+      musicArtist = 'zee’s playlist';
     }
 
     const linkIconHtml = musicUrl
@@ -2567,7 +2567,7 @@ window.ZLog = window.ZLog || {};
           if (parsed) {
             toggleTrack({
               title: playEl.dataset.title || 'On Repeat',
-              artist: playEl.dataset.artist || 'Zee’s Playlist',
+              artist: playEl.dataset.artist || 'zee’s playlist',
               url: url
             });
           } else {

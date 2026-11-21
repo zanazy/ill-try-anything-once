@@ -3354,3 +3354,55 @@ body:not(.author-mode) hr.author-only {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ── Notebook Footer Credit ── */
+.diary-footer {
+  margin-top: 48px;
+  padding: 28px 16px 20px;
+  text-align: center;
+  border-top: 1px dashed rgba(83, 126, 96, 0.2);
+}
+
+[data-theme="dark"] .diary-footer {
+  border-top-color: rgba(220, 229, 213, 0.12);
+}
+
+.diary-footer-credit {
+  font-family: var(--font-base);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+/* ── Slideover Profile Card ── */
+.index-about-card {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(83, 126, 96, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(83, 126, 96, 0.15);
+}
+
+[data-theme="dark"] .index-about-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.index-about-title {
+  font-family: var(--font-base);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.index-about-text {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  margin: 0;
+}
