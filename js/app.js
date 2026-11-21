@@ -71,6 +71,7 @@ window.ZLog = window.ZLog || {};
     dom.canvasSoundtrackStrip = $('#canvas-soundtrack-strip');
     dom.canvasSoundtrackClose = $('#canvas-soundtrack-close');
     dom.canvasQuoteBtn  = $('#canvas-quote-btn');
+    dom.canvasStickyBtn = $('#canvas-sticky-btn');
     dom.canvasHrBtn     = $('#canvas-hr-btn');
     dom.canvasPreviewBtn = $('#canvas-preview-btn');
     dom.canvasPublishBtn = $('#canvas-publish-btn');
@@ -1293,6 +1294,87 @@ window.ZLog = window.ZLog || {};
     execCanvasCommand('createLink', cleanUrl);
   }
 
+  function handleCanvasStickyNote() {
+    if (isCanvasPreviewActive || !dom.canvasBody) return;
+    dom.canvasBody.focus();
+    const sel = window.getSelection();
+    let range = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0) : null;
+
+    if (!range || !dom.canvasBody.contains(range.commonAncestorContainer)) {
+      range = document.createRange();
+      range.selectNodeContents(dom.canvasBody);
+      range.collapse(false);
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
+
+    // Prevent nesting inside another sticky note
+    let parent = range.commonAncestorContainer;
+    while (parent && parent !== dom.canvasBody) {
+      if (parent.classList && parent.classList.contains('diary-sticky-note')) {
+        return;
+      }
+      parent = parent.parentNode;
+    }
+
+    const selectedText = range.toString().trim();
+    const noteText = selectedText || 'side note: small things keeping me sane today…';
+
+    const aside = document.createElement('aside');
+    aside.className = 'diary-sticky-note';
+    aside.innerHTML = `<button type="button" class="sticky-note-del-btn" title="Remove sticky note" contenteditable="false" aria-label="Remove sticky note">×</button><p>${escapeHtml(noteText)}</p>`;
+
+    range.deleteContents();
+    range.insertNode(aside);
+
+    // Ensure a paragraph follows the sticky note for continued typing
+    const nextNode = aside.nextSibling;
+    if (!nextNode || (nextNode.nodeType === Node.TEXT_NODE && !nextNode.textContent.trim())) {
+      const p = document.createElement('p');
+      p.innerHTML = '<br>';
+      if (nextNode) {
+        aside.parentNode.insertBefore(p, nextNode);
+      } else {
+        aside.parentNode.appendChild(p);
+      }
+    }
+
+    // Place selection inside the sticky note
+    const p = aside.querySelector('p');
+    if (p && sel) {
+      const newRange = document.createRange();
+      newRange.selectNodeContents(p);
+      newRange.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+    }
+  }
+
+  function ensureStickyNoteEditorControls(container) {
+    if (!container) return;
+    container.querySelectorAll('.diary-sticky-note').forEach(note => {
+      if (!note.querySelector('.sticky-note-del-btn')) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sticky-note-del-btn';
+        btn.title = 'Remove sticky note';
+        btn.setAttribute('contenteditable', 'false');
+        btn.setAttribute('aria-label', 'Remove sticky note');
+        btn.textContent = '×';
+        note.insertBefore(btn, note.firstChild);
+      }
+    });
+  }
+
+  function getCleanCanvasBodyHtml() {
+    if (!dom.canvasBody) return '';
+    const clone = dom.canvasBody.cloneNode(true);
+    clone.querySelectorAll('.sticky-note-del-btn').forEach(btn => btn.remove());
+    return clone.innerHTML.trim();
+  }
+
   function calcReadingMinutes(html) {
     const text = (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const wordCount = text ? text.split(/\s+/).length : 0;
@@ -1320,7 +1402,7 @@ window.ZLog = window.ZLog || {};
           catLabel = `<span class="reader-category-label">— ${escapeHtml(cat)}</span> · `;
         }
       }
-      const htmlBody = dom.canvasBody ? dom.canvasBody.innerHTML : '';
+      const htmlBody = getCleanCanvasBodyHtml();
       const readingTime = calcReadingMinutes(htmlBody);
 
       if (dom.canvasPreviewMeta) {
@@ -1401,6 +1483,7 @@ window.ZLog = window.ZLog || {};
       }
       if (dom.canvasBody) {
         dom.canvasBody.innerHTML = entryToEdit.body || entryToEdit.content || '';
+        ensureStickyNoteEditorControls(dom.canvasBody);
       }
 
       // Pre-select category tag
@@ -1518,7 +1601,7 @@ window.ZLog = window.ZLog || {};
       };
     }
 
-    let rawBody = dom.canvasBody ? dom.canvasBody.innerHTML.trim() : '';
+    let rawBody = getCleanCanvasBodyHtml();
     if (!rawBody || rawBody === '<br>') {
       alert('Please write something in your entry before publishing.');
       if (isCanvasPreviewActive) toggleCanvasPreview();
@@ -1527,7 +1610,7 @@ window.ZLog = window.ZLog || {};
     }
 
     // Wrap plain lines in <p> if missing block markup
-    if (!/<(p|h2|h3|blockquote|ul|ol|figure|div)/i.test(rawBody)) {
+    if (!/<(p|h2|h3|blockquote|ul|ol|figure|div|aside)/i.test(rawBody)) {
       rawBody = rawBody.split(/\n{2,}/).map(para => `<p>${para.trim()}</p>`).join('\n\n');
     }
 
@@ -2339,6 +2422,29 @@ window.ZLog = window.ZLog || {};
       dom.canvasHrBtn.addEventListener('mousedown', (e) => {
         e.preventDefault();
         execCanvasCommand('insertHorizontalRule');
+      });
+    }
+
+    // Sticky Note
+    if (dom.canvasStickyBtn) {
+      dom.canvasStickyBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        handleCanvasStickyNote();
+      });
+    }
+
+    // Canvas Body Click (Delete Sticky Note)
+    if (dom.canvasBody) {
+      dom.canvasBody.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.sticky-note-del-btn');
+        if (delBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const note = delBtn.closest('.diary-sticky-note');
+          if (note) {
+            note.remove();
+          }
+        }
       });
     }
 

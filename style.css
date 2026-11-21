@@ -1975,7 +1975,7 @@ textarea {
   margin-bottom: 1.6em;
 }
 
-.reader-body p:first-of-type::first-letter {
+.reader-body > p:first-of-type::first-letter {
   font-family: var(--font-heading);
   font-size: 3.2em;
   float: left;
@@ -2874,6 +2874,157 @@ textarea {
   font-size: 14.5px;
   font-weight: 500;
   letter-spacing: 0.01em;
+}
+
+/* ── Matcha Paper Sticky Note (Editor & Reader) ── */
+.diary-sticky-note {
+  position: relative;
+  background-color: #DCECD5;
+  color: #1E2E24;
+  border: 1px solid #C3D9BA;
+  border-radius: 2px;
+  padding: 22px 20px 18px 20px;
+  max-width: 280px;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 8px 20px -8px rgba(30, 46, 36, 0.14);
+  font-family: var(--font-body);
+  font-size: 14.5px;
+  line-height: 1.6;
+  box-sizing: border-box;
+  margin: 24px auto;
+  width: 100%;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.diary-sticky-note:hover {
+  transform: rotate(-0.5deg) scale(1.01);
+  box-shadow: 0 10px 24px -6px rgba(30, 46, 36, 0.2);
+}
+
+/* Translucent top adhesive strip highlight */
+.diary-sticky-note::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.35);
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+  pointer-events: none;
+}
+
+/* Desktop layout: float right alongside main text flow */
+@media (min-width: 768px) {
+  .diary-sticky-note {
+    float: right;
+    margin-left: 24px;   /* md:ml-6 */
+    margin-bottom: 16px; /* md:mb-4 */
+    margin-top: 8px;
+    margin-right: -8px;  /* organic scrapbook offset */
+    width: 280px;
+  }
+}
+
+/* Clear float on following headings */
+.reader-body h2,
+.reader-body h3,
+.canvas-body h2,
+.canvas-body h3,
+.canvas-preview-body h2,
+.canvas-preview-body h3 {
+  clear: both;
+}
+
+/* Sticky note typography resets */
+.diary-sticky-note p {
+  margin: 0 0 8px 0 !important;
+  color: #1E2E24 !important;
+  font-family: var(--font-body) !important;
+  font-size: 14.5px !important;
+  line-height: 1.6 !important;
+}
+
+.diary-sticky-note p:last-child {
+  margin-bottom: 0 !important;
+}
+
+.diary-sticky-note p::first-letter,
+.diary-sticky-note p:first-of-type::first-letter {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  float: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: inherit !important;
+  line-height: inherit !important;
+}
+
+.diary-sticky-note ul,
+.diary-sticky-note ol {
+  margin: 4px 0 6px 18px !important;
+  padding: 0 !important;
+  color: #1E2E24 !important;
+}
+
+.diary-sticky-note li {
+  margin-bottom: 4px !important;
+  color: #1E2E24 !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* Dark mode theme consistency */
+[data-theme="dark"] .diary-sticky-note {
+  background-color: #DCECD5;
+  color: #1E2E24;
+  border-color: #C3D9BA;
+  box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"] .diary-sticky-note * {
+  color: #1E2E24 !important;
+}
+
+/* Editor-only × delete button */
+.sticky-note-del-btn {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(30, 46, 36, 0.1);
+  border: none;
+  color: #1E2E24;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+  z-index: 10;
+  user-select: none;
+  padding: 0;
+}
+
+.diary-sticky-note:hover .sticky-note-del-btn,
+.diary-sticky-note:focus-within .sticky-note-del-btn {
+  opacity: 1;
+}
+
+.sticky-note-del-btn:hover {
+  background: rgba(178, 83, 62, 0.2);
+  color: #B2533E;
+}
+
+.reader-body .sticky-note-del-btn,
+.canvas-preview-body .sticky-note-del-btn {
+  display: none !important;
 }
 
 .reader-footer-actions {
