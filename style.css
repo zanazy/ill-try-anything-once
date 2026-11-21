@@ -2463,9 +2463,11 @@ body.author-mode .polaroid-quote-strip:hover {
 .mini-player {
   position: fixed;
   bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(140%);
-  width: min(540px, calc(100vw - 32px));
+  right: 24px;
+  left: auto;
+  transform: translateY(140%);
+  width: 440px;
+  max-width: calc(100vw - 32px);
   z-index: 450;
   background: #FFFFFF;
   border: 1px solid #DEE7D7;
@@ -2486,9 +2488,23 @@ body.author-mode .polaroid-quote-strip:hover {
 }
 
 .mini-player.visible {
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .mini-player {
+    right: auto;
+    left: 50%;
+    bottom: 16px;
+    width: min(540px, calc(100vw - 32px));
+    transform: translateX(-50%) translateY(140%);
+  }
+
+  .mini-player.visible {
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .mini-player-inner {
