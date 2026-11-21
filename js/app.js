@@ -144,6 +144,9 @@ window.ZLog = window.ZLog || {};
     dom.progressBar     = $('#reading-progress');
     dom.authorSignoutBtn = $('#author-signout-btn');
     dom.runningDate     = $('#diary-running-date');
+    dom.journalFilterBar = $('#journal-filter-bar');
+    dom.footerAuthorBtn = $('#footer-author-btn');
+    dom.footerAuthorTrigger = $('#footer-author-trigger');
   }
 
   function escapeHtml(str) {
@@ -307,8 +310,10 @@ window.ZLog = window.ZLog || {};
       document.body.classList.add('author-mode');
       const emailEl = $('#author-session-email');
       if (emailEl) emailEl.textContent = (session && session.user && session.user.email) ? session.user.email : 'Author Mode Active';
+      if (dom.footerAuthorBtn) dom.footerAuthorBtn.textContent = 'author mode (signed in)';
     } else {
       document.body.classList.remove('author-mode');
+      if (dom.footerAuthorBtn) dom.footerAuthorBtn.textContent = 'author login';
     }
     renderFilters();
     renderFeed();
@@ -460,39 +465,66 @@ window.ZLog = window.ZLog || {};
      ═══════════════════════════════════════ */
 
   function renderFilters() {
-    if (!dom.filterBar) return;
     const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
     const allEntries = Data.loadEntries();
     const visibleEntries = isAuthor ? allEntries : allEntries.filter(e => e.published !== false);
     const draftCount = allEntries.filter(e => e.published === false).length;
 
     let tagsToRender = [...Data.TAGS];
-    if (isAuthor && draftCount > 0) {
+    if (isAuthor) {
       tagsToRender.push('Drafts');
     }
 
-    dom.filterBar.innerHTML = tagsToRender.map((tag) => {
-      let count = 0;
-      if (tag.toLowerCase() === 'all') {
-        count = visibleEntries.length;
-      } else if (tag.toLowerCase() === 'drafts') {
-        count = draftCount;
-      } else {
-        count = Data.getFilteredEntries(tag, isAuthor).length;
-      }
-      const countPadded = String(count).padStart(2, '0');
-      const isActive = tag.toLowerCase() === activeFilter.toLowerCase();
-      const label = tag.toLowerCase();
-      return `
-        <button class="index-nav-item${isActive ? ' active' : ''}" data-tag="${tag}">
-          <span class="index-item-left">
-            <span class="index-indicator" aria-hidden="true">—</span>
-            <span class="index-label">${label}</span>
-          </span>
-          <span class="index-count">${countPadded}</span>
-        </button>
-      `;
-    }).join('');
+    // 1. Render in top of Journal Section: dom.journalFilterBar
+    if (dom.journalFilterBar) {
+      dom.journalFilterBar.innerHTML = tagsToRender.map((tag) => {
+        let count = 0;
+        if (tag.toLowerCase() === 'all') {
+          count = visibleEntries.length;
+        } else if (tag.toLowerCase() === 'drafts') {
+          count = draftCount;
+        } else {
+          count = Data.getFilteredEntries(tag, isAuthor).length;
+        }
+        const isActive = tag.toLowerCase() === activeFilter.toLowerCase();
+        const isDraftTab = tag.toLowerCase() === 'drafts';
+        const label = isDraftTab ? 'drafts' : tag.toLowerCase();
+
+        return `
+          <button type="button" class="journal-filter-pill${isActive ? ' active' : ''}${isDraftTab ? ' drafts-filter-pill' : ''}" data-tag="${tag}" role="tab" aria-selected="${isActive}">
+            <span>${label}</span>
+            <span class="pill-count">(${count})</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    // 2. Render inside Slide-Over Index Drawer: dom.filterBar
+    if (dom.filterBar) {
+      dom.filterBar.innerHTML = tagsToRender.map((tag) => {
+        let count = 0;
+        if (tag.toLowerCase() === 'all') {
+          count = visibleEntries.length;
+        } else if (tag.toLowerCase() === 'drafts') {
+          count = draftCount;
+        } else {
+          count = Data.getFilteredEntries(tag, isAuthor).length;
+        }
+        const countPadded = String(count).padStart(2, '0');
+        const isActive = tag.toLowerCase() === activeFilter.toLowerCase();
+        const isDraftTab = tag.toLowerCase() === 'drafts';
+        const label = isDraftTab ? 'drafts' : tag.toLowerCase();
+        return `
+          <button class="index-nav-item${isActive ? ' active' : ''}${isDraftTab ? ' index-item-drafts' : ''}" data-tag="${tag}">
+            <span class="index-item-left">
+              <span class="index-indicator" aria-hidden="true">—</span>
+              <span class="index-label">${label}</span>
+            </span>
+            <span class="index-count">${countPadded}</span>
+          </button>
+        `;
+      }).join('');
+    }
   }
 
   function openIndexSlideover() {
@@ -591,7 +623,22 @@ window.ZLog = window.ZLog || {};
     ).join('');
 
     const draftTagHtml = isDraft
-      ? `<span class="draft-badge" title="Unpublished Draft">draft</span>`
+      ? `<span class="draft-badge draft-pill" style="border: 1px solid #DCE5D5;" title="Unpublished Draft">draft</span>`
+      : '';
+
+    const authorActionsHtml = isAuthor
+      ? `
+        <button type="button" class="entry-edit-pill author-only" data-entry-id="${entry.id}" title="Edit this entry">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Edit</span>
+        </button>
+        ${isDraft ? `
+          <button type="button" class="entry-publish-pill author-only" data-entry-id="${entry.id}" title="Publish this draft live immediately">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Publish</span>
+          </button>
+        ` : ''}
+      `
       : '';
 
     return `
@@ -608,10 +655,7 @@ window.ZLog = window.ZLog || {};
           <span>${entry.readingTime || '?'} min read</span>
           ${draftTagHtml}
           ${tagsMetaHtml}
-          <button type="button" class="entry-edit-pill author-only" data-entry-id="${entry.id}" title="Edit this entry">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <span>Edit</span>
-          </button>
+          ${authorActionsHtml}
         </div>
         ${coverHtml}
         <h2>${entry.title}</h2>
@@ -654,6 +698,22 @@ window.ZLog = window.ZLog || {};
     dom.feedColumn.innerHTML = entries.map(entry => renderEntryCard(entry, mdlMap)).join('');
   }
 
+  async function handleQuickPublishDraft(id) {
+    const entry = Data.getEntry(id);
+    if (!entry) return;
+    if (!confirm(`Publish "${entry.title || 'Untitled Draft'}" live to journal?`)) return;
+
+    try {
+      showToast('Publishing draft live…');
+      await Data.updateLivePost(id, { ...entry, published: true });
+      showToast(`"${entry.title}" published live!`);
+      await syncAndRenderPosts();
+    } catch (err) {
+      console.error('Quick publish error:', err);
+      alert('Failed to publish draft: ' + (err.message || 'Error updating Supabase.'));
+    }
+  }
+
   function handleFeedClick(e) {
     // Edit entry pill click (Author only)
     const editPill = e.target.closest('.entry-edit-pill');
@@ -664,6 +724,18 @@ window.ZLog = window.ZLog || {};
       const entry = Data.getEntry(id);
       if (entry) {
         openEditor(entry);
+      }
+      return;
+    }
+
+    // Publish draft pill click (Author only)
+    const publishPill = e.target.closest('.entry-publish-pill');
+    if (publishPill) {
+      e.stopPropagation();
+      e.preventDefault();
+      const id = publishPill.dataset.entryId;
+      if (id) {
+        handleQuickPublishDraft(id);
       }
       return;
     }
@@ -3861,8 +3933,29 @@ window.ZLog = window.ZLog || {};
       });
     }
 
-    // Filters
-    dom.filterBar.addEventListener('click', handleFilterClick);
+    // Filters (Drawer Index & Top Journal Section)
+    if (dom.filterBar) dom.filterBar.addEventListener('click', handleFilterClick);
+    if (dom.journalFilterBar) dom.journalFilterBar.addEventListener('click', handleFilterClick);
+
+    // Footer Author Login Triggers
+    if (dom.footerAuthorBtn) {
+      dom.footerAuthorBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openAuthorModal();
+      });
+    }
+    if (dom.footerAuthorTrigger) {
+      dom.footerAuthorTrigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        openAuthorModal();
+      });
+      dom.footerAuthorTrigger.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          openAuthorModal();
+        }
+      });
+    }
 
     // Index Slide-Over Drawer
     if (dom.indexToggleBtn) {

@@ -196,6 +196,9 @@
       <section class="diary-entries-section">
         <div class="diary-entries-header">
           <span class="diary-entries-kicker">JOURNAL ENTRIES</span>
+          <div class="journal-filter-bar" id="journal-filter-bar" role="tablist" aria-label="Journal category filters">
+            <!-- Filter pills (All, Tags, Drafts) rendered by JS -->
+          </div>
         </div>
         <div class="diary-papers-stack" id="feed-column" aria-label="Journal entries">
           <!-- Stacked paper slips rendered by JS -->
@@ -204,7 +207,8 @@
 
       <!-- Diary Notebook Footer -->
       <footer class="diary-footer">
-        <p class="diary-footer-credit">curated &amp; knitted by zee</p>
+        <p class="diary-footer-credit" id="footer-author-trigger" role="button" tabindex="0" title="Author Access">curated &amp; knitted by zee</p>
+        <button type="button" class="footer-author-link" id="footer-author-btn" title="Author Login">author login</button>
       </footer>
 
     </div>

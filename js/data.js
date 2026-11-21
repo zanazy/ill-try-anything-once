@@ -420,7 +420,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       song_note: noteText,
       body: bodyContent,
       content: bodyContent,
-      published: row.published !== undefined ? row.published : true,
+      published: (row.published === false || row.published === 'false' || row.is_draft === true) ? false : true,
       createdAt: row.created_at || row.createdAt || new Date().toISOString()
     };
   }
@@ -445,12 +445,20 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
 
       if (Array.isArray(data) && data.length > 0) {
         const mapped = data.map(mapPostRow).filter(Boolean);
-        saveEntries(mapped);
-        return { posts: mapped, fromDb: true, empty: false, error: null };
+        // Safely preserve any local drafts stored in localStorage that are not in the database
+        const currentLocal = loadEntries();
+        const localDrafts = currentLocal.filter(loc =>
+          loc.published === false && !mapped.some(db => String(db.id) === String(loc.id))
+        );
+        const combined = [...localDrafts, ...mapped];
+        saveEntries(combined);
+        return { posts: combined, fromDb: true, empty: false, error: null };
       } else {
-        // Table exists but has 0 posts — keep feed completely empty!
-        saveEntries([]);
-        return { posts: [], fromDb: true, empty: true, error: null };
+        // Table exists but 0 posts in DB: keep local drafts if any
+        const currentLocal = loadEntries();
+        const localDrafts = currentLocal.filter(loc => loc.published === false);
+        saveEntries(localDrafts);
+        return { posts: localDrafts, fromDb: true, empty: localDrafts.length === 0, error: null };
       }
     } catch (err) {
       console.warn('ZLog: Supabase fetch posts error (offline):', err);
@@ -638,9 +646,21 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     const { data, error } = await sb.from('posts').insert([row]).select();
     if (error) {
       console.error('ZLog: Supabase insert post error:', error);
-      alert('Supabase Insert Error: ' + (error.message || JSON.stringify(error)));
-      const err = new Error(error.message || 'Supabase insert failed');
+      const detail = error.message || error.details || error.hint || JSON.stringify(error);
+      alert('Supabase Insert Error: ' + detail);
+      // Fallback: save to localStorage so the author's work is NEVER lost!
+      const fallbackEntry = {
+        ...entry,
+        id: entry.id || ('local-draft-' + Date.now()),
+        published: entry.published !== undefined ? Boolean(entry.published) : false
+      };
+      const current = loadEntries();
+      const filtered = current.filter(e => String(e.id) !== String(fallbackEntry.id));
+      filtered.unshift(fallbackEntry);
+      saveEntries(filtered);
+      const err = new Error(detail);
       err._alerted = true;
+      err.savedLocally = true;
       throw err;
     }
 
@@ -701,9 +721,22 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     const { data, error } = await sb.from('posts').update(row).eq('id', id).select();
     if (error) {
       console.error('ZLog: Supabase update post error:', error);
-      alert('Supabase Update Error: ' + (error.message || JSON.stringify(error)));
-      const err = new Error(error.message || 'Supabase update failed');
+      const detail = error.message || error.details || error.hint || JSON.stringify(error);
+      alert('Supabase Update Error: ' + detail);
+      // Fallback: save to localStorage so the author's work is NEVER lost!
+      const fallbackEntry = {
+        ...entry,
+        id,
+        published: entry.published !== undefined ? Boolean(entry.published) : false
+      };
+      const current = loadEntries();
+      const idx = current.findIndex(e => String(e.id) === String(id));
+      if (idx !== -1) current[idx] = fallbackEntry;
+      else current.unshift(fallbackEntry);
+      saveEntries(current);
+      const err = new Error(detail);
       err._alerted = true;
+      err.savedLocally = true;
       throw err;
     }
 
