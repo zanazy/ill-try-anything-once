@@ -1213,8 +1213,6 @@ window.ZLog = window.ZLog || {};
       const isPlaying = isTrackPlaying(fullTrack);
 
       if (songUrl) {
-        const parsed = parseTrackUrl(songUrl);
-        const platformName = parsed ? parsed.platform : 'Soundtrack';
         soundtrackHtml = `
           <div class="soundtrack-card">
             <div class="vinyl-art${isPlaying ? ' spinning' : ''}" id="reader-vinyl"></div>
@@ -1233,7 +1231,6 @@ window.ZLog = window.ZLog || {};
                         title="Play soundtrack">
                   ${isPlaying ? ICONS.pause : ICONS.play}
                 </button>
-                <span class="soundtrack-platform-badge">${escapeHtml(platformName)}</span>
                 <a href="${escapeHtml(songUrl)}" target="_blank" rel="noopener noreferrer" class="soundtrack-external-link" title="Open original link">
                   ${ICONS.externalLink}
                 </a>
