@@ -751,10 +751,6 @@ window.ZLog = window.ZLog || {};
           <span class="currently-tag">DAYDREAMING OF</span>
           <span class="currently-text">${escapeHtml((status && status.daydreaming !== undefined && status.daydreaming !== null) ? status.daydreaming : 'Quiet greenhouse afternoons & sunlit ceramic cups')}</span>
         </div>
-        <div class="currently-row">
-          <span class="currently-tag">DAILY TALLY</span>
-          <span class="currently-text">${escapeHtml(status.dailyTally || '3 cups of genmaicha · 1 completed puzzle · 4,200 steps')}</span>
-        </div>
       `;
     }
   }
@@ -782,7 +778,6 @@ window.ZLog = window.ZLog || {};
     if ($('#sm-repeat')) $('#sm-repeat').value          = status.onRepeat || '';
     if ($('#sm-crafting')) $('#sm-crafting').value      = status.crafting || '';
     if ($('#sm-daydreaming')) $('#sm-daydreaming').value = (status && status.daydreaming !== undefined && status.daydreaming !== null) ? status.daydreaming : '';
-    if ($('#sm-tally')) $('#sm-tally').value            = status.dailyTally || '';
     dom.statusModal.classList.add('open');
   }
 
@@ -795,14 +790,12 @@ window.ZLog = window.ZLog || {};
     const onRepeat = $('#sm-repeat') ? $('#sm-repeat').value.trim() : '';
     const crafting = $('#sm-crafting') ? $('#sm-crafting').value.trim() : '';
     const daydreaming = $('#sm-daydreaming') ? $('#sm-daydreaming').value.trim() : '';
-    const dailyTally = $('#sm-tally') ? $('#sm-tally').value.trim() : '';
 
     const newStatus = {
       reading:      reading,
       onRepeat:     onRepeat || 'Where’s My Love — SYML',
       crafting:     crafting,
-      daydreaming:  daydreaming,
-      dailyTally:   dailyTally
+      daydreaming:  daydreaming
     };
 
     closeStatusModal();

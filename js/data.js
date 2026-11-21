@@ -21,8 +21,7 @@ window.ZLog = window.ZLog || {};
     reading:      'The Creative Act — Rick Rubin',
     onRepeat:     'Where’s My Love — SYML',
     crafting:     'Chunky knit pouch with sage yarn',
-    daydreaming:  'Quiet greenhouse afternoons & sunlit ceramic cups',
-    dailyTally:   '3 cups of genmaicha · 1 completed puzzle · 4,200 steps'
+    daydreaming:  'Quiet greenhouse afternoons & sunlit ceramic cups'
   };
 
   /* ── Quick Tag definitions (Feed Filter Bar & Editor) ── */
@@ -162,14 +161,11 @@ window.ZLog = window.ZLog || {};
         const parsed = JSON.parse(raw);
         let changed = false;
         if ('location' in parsed) { delete parsed.location; changed = true; }
+        if ('dailyTally' in parsed) { delete parsed.dailyTally; changed = true; }
         if ('lastfmUser' in parsed) { delete parsed.lastfmUser; changed = true; }
         if ('lastfmApiKey' in parsed) { delete parsed.lastfmApiKey; changed = true; }
         if (parsed.crafting === undefined || parsed.crafting === null) {
           parsed.crafting = defaultStatus.crafting;
-          changed = true;
-        }
-        if (parsed.dailyTally === undefined || parsed.dailyTally === null) {
-          parsed.dailyTally = defaultStatus.dailyTally;
           changed = true;
         }
         if (parsed.daydreaming === undefined || parsed.daydreaming === null) {
@@ -426,8 +422,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
           reading:     (data.reading !== undefined && data.reading !== null) ? data.reading : (currentLocal.reading || defaultStatus.reading),
           onRepeat:    data.on_repeat || data.onRepeat || currentLocal.onRepeat || defaultStatus.onRepeat,
           crafting:    (data.crafting !== undefined && data.crafting !== null) ? data.crafting : (currentLocal.crafting || defaultStatus.crafting),
-          daydreaming: resolvedDaydreaming,
-          dailyTally:  (data.daily_tally !== undefined && data.daily_tally !== null) ? data.daily_tally : (currentLocal.dailyTally || defaultStatus.dailyTally)
+          daydreaming: resolvedDaydreaming
         };
         saveStatus(merged);
         return merged;
@@ -453,8 +448,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
         reading:        typeof newStatus.reading === 'string' ? newStatus.reading : '',
         on_repeat:      typeof newStatus.onRepeat === 'string' ? newStatus.onRepeat : '',
         crafting:       typeof newStatus.crafting === 'string' ? newStatus.crafting : '',
-        daydreaming_of: typeof newStatus.daydreaming === 'string' ? newStatus.daydreaming : '',
-        daily_tally:    typeof newStatus.dailyTally === 'string' ? newStatus.dailyTally : ''
+        daydreaming_of: typeof newStatus.daydreaming === 'string' ? newStatus.daydreaming : ''
       };
       const { error } = await sb.from('site_status').upsert(row);
       if (error) {
