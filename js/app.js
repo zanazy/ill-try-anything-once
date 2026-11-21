@@ -455,6 +455,9 @@ window.ZLog = window.ZLog || {};
     } else if (clean === 'slow afternoons') {
       label = 'slow afternoons';
       modifierClass = 'entry-tag--slowafternoons';
+    } else if (clean === 'memories') {
+      label = 'memories';
+      modifierClass = 'entry-tag--memories';
     }
 
     return `<span class="entry-tag ${modifierClass}" data-filter-tag="${clean}">${label}</span>`;
@@ -1651,7 +1654,7 @@ window.ZLog = window.ZLog || {};
     } else {
       dom.canvasMdlPreview.style.display = 'none';
       if (!dom.canvasTitle.value) {
-        if (selectedCanvasCategory && ['nocturnal thoughts', 'rants', 'brain dump'].includes(selectedCanvasCategory)) {
+        if (selectedCanvasCategory && ['nocturnal thoughts', 'memories', 'rants', 'brain dump'].includes(selectedCanvasCategory)) {
           dom.canvasTitle.placeholder = `e.g. ${selectedCanvasCategory} (or leave blank to auto-title)`;
         } else {
           dom.canvasTitle.placeholder = 'Title';
@@ -2407,7 +2410,7 @@ window.ZLog = window.ZLog || {};
       if (!pTitle && cat) {
         if (cat === 'might delete later') {
           pTitle = `might delete later #${getNextMdlNumber()}`;
-        } else if (['nocturnal thoughts', 'rants', 'brain dump'].includes(cat)) {
+        } else if (['nocturnal thoughts', 'memories', 'rants', 'brain dump'].includes(cat)) {
           const mDay = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           pTitle = `${cat} — ${mDay}`;
         }
@@ -2609,12 +2612,14 @@ window.ZLog = window.ZLog || {};
           title = `might delete later #${nextNum}`;
         } else if (selectedCanvasCategory === 'nocturnal thoughts') {
           title = `nocturnal thoughts — ${monthDay}`;
+        } else if (selectedCanvasCategory === 'memories') {
+          title = `memories — ${monthDay}`;
         } else if (selectedCanvasCategory === 'rants') {
           title = `rants — ${monthDay}`;
         } else if (selectedCanvasCategory === 'brain dump') {
           title = `brain dump — ${monthDay}`;
         } else {
-          alert('Please enter a title, or pick a Quick Tag (might delete later, nocturnal thoughts, rants, brain dump) for an automatic editorial title.');
+          alert('Please enter a title, or pick a Quick Tag (might delete later, nocturnal thoughts, memories, rants, brain dump) for an automatic editorial title.');
           if (isCanvasPreviewActive) toggleCanvasPreview();
           if (dom.canvasTitle) dom.canvasTitle.focus();
           return;

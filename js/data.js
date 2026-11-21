@@ -38,6 +38,7 @@ window.ZLog = window.ZLog || {};
     'All',
     'might delete later',
     'nocturnal thoughts',
+    'memories',
     'rants',
     'brain dump',
     'tiny wins',

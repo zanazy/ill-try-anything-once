@@ -2109,6 +2109,14 @@ body.author-mode .polaroid-quote-strip:hover {
   border: 1px solid rgba(182, 209, 176, 0.25) !important;
 }
 
+.entry-tag--memories {
+  color: #556B59 !important;
+}
+
+[data-theme="dark"] .entry-tag--memories {
+  color: #B5D0B8 !important;
+}
+
 .entry-tag--default {
   background: var(--surface-soft);
   color: var(--ink-muted);
