@@ -1095,6 +1095,24 @@ textarea {
   color: var(--accent);
 }
 
+.currently-value-text.playing {
+  color: var(--accent);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--accent-light, #C3D9BA);
+  text-underline-offset: 3px;
+}
+
+@keyframes cassetteSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.cassette-badge.spinning-cassette svg {
+  animation: cassetteSpin 3s linear infinite;
+  transform-origin: center;
+}
+
 /* ── Divider Across Notebook Page ── */
 .diary-divider {
   border: none;
@@ -1500,6 +1518,26 @@ textarea {
 
 .status-editor-fields input:focus {
   border-color: var(--accent);
+}
+
+.sm-repeat-group {
+  background: var(--surface-soft, rgba(220, 236, 213, 0.25));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.sm-repeat-subfields {
+  margin-top: 8px;
+}
+
+.sm-repeat-hint {
+  font-size: 11px;
+  color: var(--ink-muted);
+  font-style: italic;
+  display: block;
+  margin-top: 4px;
+  line-height: 1.35;
 }
 
 /* ── Live Now Playing Pulse Dot ── */

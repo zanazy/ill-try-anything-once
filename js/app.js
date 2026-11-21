@@ -681,50 +681,244 @@ window.ZLog = window.ZLog || {};
   }
 
   /* ═══════════════════════════════════════
+     SONG LINK / METADATA & ON REPEAT HELPERS
+     ═══════════════════════════════════════ */
+
+  function cleanVideoTitle(raw) {
+    if (!raw) return '';
+    return raw
+      .replace(/\s*[\(\[](?:Official\s*(?:Music\s*)?(?:Video|Audio|HD|4K|Remaster(?:ed)?|Visualizer|Lyric Video)|Music Video|Lyric Video|Audio|Visualizer|Official|MV)[\)\]]/gi, '')
+      .replace(/\s*\|\s*Official\s*(?:Music\s*)?(?:Video|Audio|Visualizer).*/gi, '')
+      .replace(/\s*-\s*Official\s*(?:Music\s*)?(?:Video|Audio|Visualizer).*/gi, '')
+      .trim();
+  }
+
+  function cleanSongMetadata(rawTitle, rawAuthor) {
+    let title = cleanVideoTitle(rawTitle);
+    let artist = (rawAuthor || '').replace(/\s*-\s*Topic$/i, '').trim();
+
+    if (title.includes(' - ') || title.includes(' — ')) {
+      const parts = title.split(/\s*(?:—|-)\s*/);
+      if (parts.length >= 2) {
+        const p0 = parts[0].trim();
+        const p1 = parts.slice(1).join(' - ').trim();
+        if (artist && p1.toLowerCase().includes(artist.toLowerCase())) {
+          title = p0;
+          artist = p1;
+        } else if (artist && p0.toLowerCase().includes(artist.toLowerCase())) {
+          artist = p0;
+          title = p1;
+        } else {
+          artist = p0;
+          title = p1;
+        }
+      }
+    }
+
+    const display = (title && artist) ? `${title} — ${artist}` : (title || artist || 'Soundtrack');
+    return { title, artist, display };
+  }
+
+  async function fetchSongDetails(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string' || !/^https?:\/\//i.test(rawUrl.trim())) return null;
+    const url = rawUrl.trim();
+
+    try {
+      const cached = localStorage.getItem('zlog_song_cache_' + url);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.display) return parsed;
+      }
+    } catch (_) {}
+
+    let result = null;
+
+    // 1. YouTube official oEmbed
+    if (/(?:youtube\.com|youtu\.be)\//i.test(url)) {
+      try {
+        const ytRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+        if (ytRes.ok) {
+          const data = await ytRes.json();
+          if (data && data.title) {
+            result = cleanSongMetadata(data.title, data.author_name || '');
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2. SoundCloud oEmbed
+    if (!result && /soundcloud\.com\//i.test(url)) {
+      try {
+        const scRes = await fetch(`https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(url)}`);
+        if (scRes.ok) {
+          const data = await scRes.json();
+          if (data && data.title) {
+            let t = data.title;
+            let a = data.author_name || '';
+            if (t.includes(' by ')) {
+              const segs = t.split(' by ');
+              result = cleanSongMetadata(segs[0], segs[1] || a);
+            } else {
+              result = cleanSongMetadata(t, a);
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3. noembed.com fallback (handles music.youtube.com, etc.)
+    if (!result) {
+      try {
+        const res = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.title && !data.error) {
+            result = cleanSongMetadata(data.title, data.author_name || '');
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 4. Direct audio link
+    if (!result && /\.(mp3|m4a|wav|ogg|aac)(\?.*)?$/i.test(url)) {
+      try {
+        const filename = url.split('/').pop().split('?')[0].replace(/\.(mp3|m4a|wav|ogg|aac)$/i, '');
+        const cleanName = decodeURIComponent(filename).replace(/[-_]+/g, ' ').trim();
+        result = cleanSongMetadata(cleanName, '');
+      } catch (_) {}
+    }
+
+    if (result && result.display) {
+      try {
+        localStorage.setItem('zlog_song_cache_' + url, JSON.stringify(result));
+      } catch (_) {}
+    }
+
+    return result;
+  }
+
+  function parseOnRepeat(raw) {
+    let title = 'Where’s My Love';
+    let artist = 'SYML';
+    let display = 'Where’s My Love — SYML';
+    let url = 'https://www.youtube.com/watch?v=t_uB6HdV7Wc';
+
+    if (!raw) {
+      return { title, artist, display, url };
+    }
+
+    if (typeof raw === 'object' && raw !== null) {
+      title = (raw.title || '').trim() || title;
+      artist = (raw.artist || '').trim() || artist;
+      url = (raw.url || '').trim() || url;
+      display = (raw.display || '').trim() || (artist ? `${title} — ${artist}` : title);
+      return { title, artist, display, url };
+    }
+
+    const str = String(raw).trim();
+
+    if (str.startsWith('{') && str.endsWith('}')) {
+      try {
+        const obj = JSON.parse(str);
+        if (obj && typeof obj === 'object') {
+          title = (obj.title || '').trim() || title;
+          artist = (obj.artist || '').trim() || artist;
+          url = (obj.url || '').trim() || url;
+          display = (obj.display || '').trim() || (artist ? `${title} — ${artist}` : title);
+          return { title, artist, display, url };
+        }
+      } catch (_) {}
+    }
+
+    if (str.includes('|')) {
+      const parts = str.split('|').map(s => s.trim());
+      const foundUrl = parts.find(p => /^https?:\/\//i.test(p));
+      const foundText = parts.find(p => !/^https?:\/\//i.test(p));
+      if (foundUrl) url = foundUrl;
+      if (foundText) {
+        if (foundText.includes('—') || foundText.includes(' - ')) {
+          const segs = foundText.split(/\s*(?:—|-)\s*/);
+          title = segs[0].trim();
+          artist = segs.slice(1).join(' - ').trim();
+          display = artist ? `${title} — ${artist}` : title;
+        } else {
+          title = foundText;
+          artist = '';
+          display = foundText;
+        }
+        return { title, artist, display, url };
+      }
+    }
+
+    if (/^https?:\/\//i.test(str)) {
+      url = str;
+      try {
+        const cached = localStorage.getItem('zlog_song_cache_' + str);
+        if (cached) {
+          const c = JSON.parse(cached);
+          if (c && c.display) {
+            return {
+              title: c.title || 'Soundtrack',
+              artist: c.artist || '',
+              display: c.display,
+              url: str
+            };
+          }
+        }
+      } catch (_) {}
+
+      // Clean fallback if not yet resolved: NEVER show "YouTube Music Track" or URL hostname
+      return { title: 'Soundtrack', artist: '', display: 'Soundtrack', url: str };
+    }
+
+    if (str.includes('—') || str.includes(' - ')) {
+      const segs = str.split(/\s*(?:—|-)\s*/);
+      title = segs[0].trim();
+      artist = segs.slice(1).join(' - ').trim();
+      display = artist ? `${title} — ${artist}` : title;
+    } else {
+      title = str;
+      artist = '';
+      display = str;
+    }
+
+    const lower = str.toLowerCase();
+    if (lower.includes('gimme love') || (lower.includes('joji') && lower.includes('love'))) {
+      url = 'https://www.youtube.com/watch?v=jPan651rVMs';
+    } else if (lower.includes('where') && lower.includes('love')) {
+      url = 'https://www.youtube.com/watch?v=t_uB6HdV7Wc';
+    } else if (lower.includes('ill try anything once') || lower.includes("i'll try anything once")) {
+      url = 'https://www.youtube.com/watch?v=kYJjZk3-8qU';
+    }
+
+    return { title, artist, display, url };
+  }
+
+  /* ═══════════════════════════════════════
      CURRENTLY WIDGET
      ═══════════════════════════════════════ */
 
   function renderCurrently() {
     const status = Data.loadStatus();
+    const track = parseOnRepeat(status.onRepeat);
 
-    // Determine On Repeat state
-    let musicTagText = 'ON REPEAT';
-    let musicTitle = 'Where’s My Love';
-    let musicArtist = 'SYML';
-    let musicDisplay = 'Where’s My Love — SYML';
-    let musicUrl = null;
-    let isExternalUrl = false;
-
-    // Manual entry from status
-    const rawRepeat = status.onRepeat || 'Where’s My Love — SYML';
-    musicDisplay = rawRepeat;
-
-    // Check if rawRepeat is a URL (e.g. YouTube Music URL)
-    if (/^https?:\/\//i.test(rawRepeat.trim())) {
-      isExternalUrl = true;
-      musicUrl = rawRepeat.trim();
-      if (rawRepeat.includes('music.youtube.com') || rawRepeat.includes('youtube.com')) {
-        musicDisplay = 'YouTube Music Track';
-      } else {
-        try {
-          const parsedUrl = new URL(rawRepeat);
-          musicDisplay = parsedUrl.hostname;
-        } catch (e) {
-          musicDisplay = 'External Audio Link';
+    // If track has a URL but display is still placeholder 'Soundtrack', resolve asynchronously
+    if (track.url && (!track.display || track.display === 'Soundtrack' || /^https?:\/\//i.test(track.display))) {
+      fetchSongDetails(track.url).then(meta => {
+        if (meta && meta.display) {
+          try {
+            localStorage.setItem('zlog_song_cache_' + track.url, JSON.stringify(meta));
+          } catch (_) {}
+          const playEl = $('#currently-play');
+          if (playEl) {
+            playEl.textContent = meta.display;
+            playEl.dataset.title = meta.title;
+            playEl.dataset.artist = meta.artist;
+            playEl.title = `Play: ${meta.display}`;
+          }
         }
-      }
-    } else if (rawRepeat.includes('—') || rawRepeat.includes('-')) {
-      const parts = rawRepeat.split(/—|-/).map(s => s.trim());
-      musicTitle = parts[0] || rawRepeat;
-      musicArtist = parts[1] || 'Unknown';
-    } else {
-      musicTitle = rawRepeat;
-      musicArtist = 'zee’s playlist';
+      });
     }
-
-    const linkIconHtml = musicUrl
-      ? ` <a href="${musicUrl}" target="_blank" rel="noopener noreferrer" class="currently-link-icon" title="Open track link">${ICONS.externalLink}</a>`
-      : '';
 
     if (dom.currentlyItems) {
       dom.currentlyItems.innerHTML = `
@@ -734,7 +928,7 @@ window.ZLog = window.ZLog || {};
         </div>
         <div class="currently-row">
           <div class="currently-tag-group">
-            <span class="currently-tag">${musicTagText}</span>
+            <span class="currently-tag">ON REPEAT</span>
             <span class="cassette-badge" title="Cassette tape">${ICONS.cassette}</span>
             <svg class="hand-drawn-arrow" width="22" height="12" viewBox="0 0 28 16" fill="none" aria-hidden="true">
               <path d="M2 13 C 10 14, 18 10, 24 4 M 18 3 L 25 4 L 23 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -742,13 +936,12 @@ window.ZLog = window.ZLog || {};
           </div>
           <div class="currently-text">
             <span class="currently-value-text clickable" id="currently-play"
-                  data-title="${escapeHtml(musicTitle)}"
-                  data-artist="${escapeHtml(musicArtist)}"
-                  data-url="${musicUrl || ''}"
-                  data-external="${isExternalUrl ? 'true' : 'false'}"
-                  title="${isExternalUrl ? 'Open link in new tab' : 'Play ambient audio'}">
-              ${escapeHtml(musicDisplay)}
-            </span>${linkIconHtml}
+                  data-title="${escapeHtml(track.title)}"
+                  data-artist="${escapeHtml(track.artist)}"
+                  data-url="${escapeHtml(track.url || '')}"
+                  title="Play: ${escapeHtml(track.display)}">
+              ${escapeHtml(track.display)}
+            </span>
           </div>
         </div>
         <div class="currently-row">
@@ -875,9 +1068,16 @@ window.ZLog = window.ZLog || {};
   function openStatusModal() {
     const status = Data.loadStatus();
     if ($('#sm-reading')) $('#sm-reading').value         = status.reading || '';
-    if ($('#sm-repeat')) $('#sm-repeat').value          = status.onRepeat || '';
     if ($('#sm-crafting')) $('#sm-crafting').value      = status.crafting || '';
     if ($('#sm-daydreaming')) $('#sm-daydreaming').value = (status && status.daydreaming !== undefined && status.daydreaming !== null) ? status.daydreaming : '';
+
+    const track = parseOnRepeat(status.onRepeat);
+    if ($('#sm-repeat-url')) $('#sm-repeat-url').value = track.url || '';
+    if ($('#sm-repeat-title')) $('#sm-repeat-title').value = track.display || '';
+    if ($('#sm-repeat-hint')) {
+      $('#sm-repeat-hint').textContent = 'Auto-detects title and singer when link is pasted';
+      $('#sm-repeat-hint').style.color = 'var(--ink-muted)';
+    }
     dom.statusModal.classList.add('open');
   }
 
@@ -885,15 +1085,96 @@ window.ZLog = window.ZLog || {};
     dom.statusModal.classList.remove('open');
   }
 
+  async function handleStatusSongUrlAutoFill() {
+    const urlInput = $('#sm-repeat-url');
+    const titleInput = $('#sm-repeat-title');
+    const hintEl = $('#sm-repeat-hint');
+    if (!urlInput || !titleInput) return;
+
+    let rawUrl = urlInput.value.trim();
+
+    // If user accidentally pasted the URL into titleInput
+    if (!rawUrl && /^https?:\/\//i.test(titleInput.value.trim())) {
+      rawUrl = titleInput.value.trim();
+      urlInput.value = rawUrl;
+      titleInput.value = '';
+    }
+
+    if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) return;
+
+    if (hintEl) {
+      hintEl.textContent = 'Detecting title & singer from link…';
+      hintEl.style.color = 'var(--accent)';
+    }
+
+    try {
+      const meta = await fetchSongDetails(rawUrl);
+      if (meta && meta.display) {
+        titleInput.value = meta.display;
+        if (hintEl) {
+          hintEl.textContent = `Auto-detected: ${meta.display}`;
+          hintEl.style.color = 'var(--accent)';
+        }
+      } else {
+        if (hintEl) {
+          hintEl.textContent = 'Link recognized. Enter title & singer above if needed.';
+          hintEl.style.color = 'var(--ink-muted)';
+        }
+      }
+    } catch (_) {
+      if (hintEl) {
+        hintEl.textContent = 'Enter title & singer above.';
+        hintEl.style.color = 'var(--ink-muted)';
+      }
+    }
+  }
+
   async function saveStatus() {
     const reading = $('#sm-reading') ? $('#sm-reading').value.trim() : '';
-    const onRepeat = $('#sm-repeat') ? $('#sm-repeat').value.trim() : '';
+    const repeatUrl = $('#sm-repeat-url') ? $('#sm-repeat-url').value.trim() : '';
+    let repeatTitle = $('#sm-repeat-title') ? $('#sm-repeat-title').value.trim() : '';
     const crafting = $('#sm-crafting') ? $('#sm-crafting').value.trim() : '';
     const daydreaming = $('#sm-daydreaming') ? $('#sm-daydreaming').value.trim() : '';
 
+    // If repeatTitle is blank but url is present, check cache or parse
+    if (repeatUrl && !repeatTitle) {
+      try {
+        const cached = localStorage.getItem('zlog_song_cache_' + repeatUrl);
+        if (cached) {
+          const c = JSON.parse(cached);
+          if (c && c.display) repeatTitle = c.display;
+        }
+      } catch (_) {}
+      if (!repeatTitle) {
+        const ytMatch = repeatUrl.match(/(?:youtu\.be\/|watch\?(?:.*&)?v=)([\w-]{11})/i);
+        if (ytMatch && ytMatch[1] === 'jPan651rVMs') {
+          repeatTitle = 'Gimme Love — Joji';
+        }
+      }
+    }
+
+    let onRepeatVal;
+    if (repeatUrl || repeatTitle) {
+      const parsedTrack = parseOnRepeat(repeatTitle || repeatUrl);
+      if (repeatUrl) parsedTrack.url = repeatUrl;
+      if (repeatTitle) {
+        parsedTrack.display = repeatTitle;
+        if (repeatTitle.includes('—') || repeatTitle.includes(' - ')) {
+          const segs = repeatTitle.split(/\s*(?:—|-)\s*/);
+          parsedTrack.title = segs[0].trim();
+          parsedTrack.artist = segs.slice(1).join(' - ').trim();
+        } else {
+          parsedTrack.title = repeatTitle;
+        }
+      }
+      onRepeatVal = JSON.stringify(parsedTrack);
+    } else {
+      onRepeatVal = 'Where’s My Love — SYML';
+    }
+
     const newStatus = {
       reading:      reading,
-      onRepeat:     onRepeat || 'Where’s My Love — SYML',
+      onRepeat:     onRepeatVal,
       crafting:     crafting,
       daydreaming:  daydreaming
     };
@@ -1254,59 +1535,10 @@ window.ZLog = window.ZLog || {};
     }
 
     try {
-      let fetched = false;
-
-      // 1. Spotify oEmbed
-      if (/open\.spotify\.com\/(?:intl-[a-z]{2,4}\/)?(track|album)/i.test(rawUrl)) {
-        try {
-          const spotifyRes = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(rawUrl)}`);
-          if (spotifyRes.ok) {
-            const data = await spotifyRes.json();
-            if (data && data.title) {
-              if (!titleInput.value.trim()) titleInput.value = data.title;
-              fetched = true;
-            }
-          }
-        } catch (_) {}
-      }
-
-      // 2. noembed.com fallback (YouTube, YouTube Music, SoundCloud, Vimeo, etc.)
-      if (!fetched) {
-        const noembedRes = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(rawUrl)}`);
-        if (noembedRes.ok) {
-          const data = await noembedRes.json();
-          if (data && !data.error) {
-            const authorName = (data.author_name || '').trim();
-            let rawTitle = (data.title || '').trim();
-
-            rawTitle = rawTitle.replace(/\s*[\(\[](?:Official\s*(?:Music\s*)?(?:Video|Audio|HD|4K|Remaster|Visualizer|Lyric Video)|Music Video|Lyric Video)[\)\]]/gi, '').trim();
-
-            let detectedArtist = authorName;
-            let detectedTitle = rawTitle;
-
-            if (rawTitle.includes(' - ')) {
-              const parts = rawTitle.split(/\s+-\s+/);
-              if (authorName && parts[0].toLowerCase().includes(authorName.toLowerCase())) {
-                detectedArtist = authorName;
-                detectedTitle = parts.slice(1).join(' - ').trim();
-              } else if (parts.length >= 2) {
-                detectedArtist = parts[0].trim();
-                detectedTitle = parts.slice(1).join(' - ').trim();
-              }
-            }
-
-            if (!titleInput.value.trim() && detectedTitle) {
-              titleInput.value = detectedTitle;
-            }
-            if (!artistInput.value.trim() && detectedArtist) {
-              artistInput.value = detectedArtist;
-            }
-            fetched = true;
-          }
-        }
-      }
-
-      if (fetched) {
+      const meta = await fetchSongDetails(rawUrl);
+      if (meta && (meta.title || meta.artist)) {
+        if (!titleInput.value.trim() && meta.title) titleInput.value = meta.title;
+        if (!artistInput.value.trim() && meta.artist) artistInput.value = meta.artist;
         if (hintEl) {
           hintEl.textContent = 'Auto-filled Song Title & Artist from link';
           hintEl.style.color = 'var(--accent)';
@@ -2300,6 +2532,18 @@ window.ZLog = window.ZLog || {};
       readerPlayBtn.innerHTML = active ? ICONS.pause : ICONS.play;
       if (readerVinyl) readerVinyl.classList.toggle('spinning', active);
     }
+
+    // Update Currently On Repeat status item
+    const currentlyPlay = $('#currently-play');
+    if (currentlyPlay) {
+      const cUrl = currentlyPlay.dataset.url;
+      const isCurrentlyPlaying = Boolean(cUrl && isTrackPlaying({ url: cUrl }));
+      currentlyPlay.classList.toggle('playing', isCurrentlyPlaying);
+      const cassetteBadge = $('.cassette-badge');
+      if (cassetteBadge) {
+        cassetteBadge.classList.toggle('spinning-cassette', isCurrentlyPlaying);
+      }
+    }
   }
 
   function initDirectAudioEvents() {
@@ -2770,6 +3014,36 @@ window.ZLog = window.ZLog || {};
       });
     }
 
+    const smRepeatUrl = $('#sm-repeat-url');
+    if (smRepeatUrl) {
+      smRepeatUrl.addEventListener('blur', handleStatusSongUrlAutoFill);
+      smRepeatUrl.addEventListener('change', handleStatusSongUrlAutoFill);
+      smRepeatUrl.addEventListener('paste', () => {
+        setTimeout(handleStatusSongUrlAutoFill, 80);
+      });
+      smRepeatUrl.addEventListener('input', () => {
+        if (/^https?:\/\//i.test(smRepeatUrl.value.trim())) {
+          setTimeout(handleStatusSongUrlAutoFill, 400);
+        }
+      });
+    }
+
+    const smRepeatTitle = $('#sm-repeat-title');
+    if (smRepeatTitle) {
+      smRepeatTitle.addEventListener('paste', () => {
+        setTimeout(() => {
+          if (/^https?:\/\//i.test(smRepeatTitle.value.trim())) {
+            handleStatusSongUrlAutoFill();
+          }
+        }, 80);
+      });
+      smRepeatTitle.addEventListener('change', () => {
+        if (/^https?:\/\//i.test(smRepeatTitle.value.trim())) {
+          handleStatusSongUrlAutoFill();
+        }
+      });
+    }
+
     // Mini player & direct audio
     if (dom.miniCloseBtn) {
       dom.miniCloseBtn.addEventListener('click', stopTrack);
@@ -2875,21 +3149,30 @@ window.ZLog = window.ZLog || {};
     dom.currentlyItems.addEventListener('click', (e) => {
       const playEl = e.target.closest('#currently-play');
       if (playEl) {
-        const url = playEl.dataset.url;
+        let url = playEl.dataset.url;
+        const title = playEl.dataset.title || 'On Repeat';
+        const artist = playEl.dataset.artist || 'zee’s playlist';
+
+        if (!url) {
+          const resolved = parseOnRepeat(title + (artist ? ' — ' + artist : ''));
+          url = resolved.url;
+        }
+
         if (url) {
           const parsed = parseTrackUrl(url);
           if (parsed) {
             toggleTrack({
-              title: playEl.dataset.title || 'On Repeat',
-              artist: playEl.dataset.artist || 'zee’s playlist',
+              title: title,
+              artist: artist,
               url: url
             });
+            return;
           } else {
             window.open(url, '_blank', 'noopener,noreferrer');
+            return;
           }
-        } else {
-          showToast(`Soundtrack note: ${playEl.dataset.title || 'Where’s My Love'} — ${playEl.dataset.artist || 'SYML'}`);
         }
+        showToast(`Soundtrack note: ${title} — ${artist}`);
       }
     });
   }

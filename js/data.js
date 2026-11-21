@@ -496,7 +496,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       const row = {
         id: 1,
         reading:        typeof newStatus.reading === 'string' ? newStatus.reading : '',
-        on_repeat:      typeof newStatus.onRepeat === 'string' ? newStatus.onRepeat : '',
+        on_repeat:      typeof newStatus.onRepeat === 'string' ? newStatus.onRepeat : (newStatus.onRepeat ? JSON.stringify(newStatus.onRepeat) : ''),
         crafting:       typeof newStatus.crafting === 'string' ? newStatus.crafting : '',
         daydreaming_of: typeof newStatus.daydreaming === 'string' ? newStatus.daydreaming : '',
         daily_tally:    JSON.stringify(hero)
@@ -528,7 +528,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       const row = {
         id: 1,
         reading:        typeof status.reading === 'string' ? status.reading : '',
-        on_repeat:      typeof status.onRepeat === 'string' ? status.onRepeat : '',
+        on_repeat:      typeof status.onRepeat === 'string' ? status.onRepeat : (status.onRepeat ? JSON.stringify(status.onRepeat) : ''),
         crafting:       typeof status.crafting === 'string' ? status.crafting : '',
         daydreaming_of: typeof status.daydreaming === 'string' ? status.daydreaming : '',
         daily_tally:    heroJson

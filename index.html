@@ -510,9 +510,14 @@
           <label for="sm-reading">Reading</label>
           <input type="text" id="sm-reading">
         </div>
-        <div>
-          <label for="sm-repeat">On Repeat (Song Title or YouTube Music URL)</label>
-          <input type="text" id="sm-repeat" placeholder="e.g. Where’s My Love — SYML or https://music.youtube.com/...">
+        <div class="sm-repeat-group">
+          <label for="sm-repeat-url">On Repeat — Song Link (YouTube, Spotify, etc.)</label>
+          <input type="url" id="sm-repeat-url" placeholder="Paste YouTube, YouTube Music, Spotify, or SoundCloud link…">
+          <div class="sm-repeat-subfields" style="margin-top: 6px;">
+            <label for="sm-repeat-title" style="font-size: 10px; opacity: 0.85;">Display Title &amp; Singer</label>
+            <input type="text" id="sm-repeat-title" placeholder="e.g. Gimme Love — Joji (Auto-fills when link is pasted)">
+          </div>
+          <span class="sm-repeat-hint" id="sm-repeat-hint" style="font-size: 11px; color: var(--ink-muted); font-style: italic; display: block; margin-top: 3px;">Auto-detects title and singer when link is pasted</span>
         </div>
         <div>
           <label for="sm-crafting">Crafting</label>
