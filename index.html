@@ -340,6 +340,35 @@
         </button>
         <input type="file" id="canvas-image-input" accept="image/*" style="display:none;">
 
+        <!-- Sage Doodle Picker -->
+        <div class="canvas-popover-anchor" style="position:relative; display:inline-flex;">
+          <button type="button" class="canvas-format-btn" id="canvas-doodle-btn" title="Insert sage doodle" aria-label="Insert sage doodle">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2 L13.5 9.5 L21 12 L13.5 14.5 L12 22 L10.5 14.5 L3 12 L10.5 9.5 Z"/>
+            </svg>
+          </button>
+          <div class="canvas-doodle-popover" id="canvas-doodle-popover" role="menu" aria-label="Sage Doodles">
+            <button type="button" class="doodle-pick-btn" data-doodle="star" title="4-point star">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L13.5 9.5 L21 12 L13.5 14.5 L12 22 L10.5 14.5 L3 12 L10.5 9.5 Z"/></svg>
+            </button>
+            <button type="button" class="doodle-pick-btn" data-doodle="spiral" title="Spiral">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12a1.5 1.5 0 0 1 1.5 1.5 3 3 0 0 1-3 3 4.5 4.5 0 0 1-4.5-4.5 6 6 0 0 1 6-6 7.5 7.5 0 0 1 7.5 7.5 9 9 0 0 1-9 9"/></svg>
+            </button>
+            <button type="button" class="doodle-pick-btn" data-doodle="sprout" title="Leaf / sprout">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22 C 12 16, 8 13, 3 13 C 3 6, 9 2, 16 3 C 21 4, 22 10, 21 16 C 16 19, 13 22, 12 22 Z"/><path d="M12 22 C 13 15, 17 9, 21 5"/></svg>
+            </button>
+            <button type="button" class="doodle-pick-btn" data-doodle="heart" title="Tiny heart">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5 C 12 20.5, 3.5 14.5, 3.5 8.5 A 4.5 4.5 0 0 1 12 6.5 A 4.5 4.5 0 0 1 20.5 8.5 C 20.5 14.5, 12 20.5, 12 20.5 Z"/></svg>
+            </button>
+            <button type="button" class="doodle-pick-btn" data-doodle="arrow" title="Curved arrow">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18 C 9 19, 15 15, 19 6 M 12 6 L 20 6 L 19 14"/></svg>
+            </button>
+            <button type="button" class="doodle-pick-btn" data-doodle="squiggle" title="Underline squiggle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 Q 5 7, 8 12 T 14 12 T 20 12 T 24 12"/></svg>
+            </button>
+          </div>
+        </div>
+
         <button type="button" class="canvas-format-btn" id="canvas-soundtrack-toggle" title="Attach Soundtrack (headphones)" aria-label="Attach Soundtrack">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
         </button>
@@ -370,6 +399,7 @@
       <!-- Right Actions: Preview & Publish -->
       <div class="canvas-topbar-right">
         <button type="button" class="canvas-preview-btn" id="canvas-preview-btn">Preview</button>
+        <button type="button" class="canvas-draft-btn" id="canvas-draft-btn" title="Save as unpublished draft">Save as Draft</button>
         <button type="button" class="btn btn-primary canvas-publish-btn" id="canvas-publish-btn">
           <span>Publish</span>
         </button>

@@ -133,6 +133,7 @@ window.ZLog = window.ZLog || {};
     const entries = loadEntries();
     entry.id = 'entry-' + Date.now();
     entry.createdAt = new Date().toISOString();
+    if (entry.published === undefined) entry.published = true;
     entry.readingTime = Math.max(1, Math.round((entry.body || '').split(/\s+/).length / 230));
     entries.unshift(entry);
     saveEntries(entries);
@@ -149,9 +150,15 @@ window.ZLog = window.ZLog || {};
     return loadEntries().find(e => e.id === id) || null;
   }
 
-  function getFilteredEntries(tag) {
-    const entries = loadEntries();
-    if (!tag || tag === 'All') return entries;
+  function getFilteredEntries(tag, isAuthor = false) {
+    let entries = loadEntries();
+    if (!isAuthor) {
+      entries = entries.filter(e => e.published !== false);
+    }
+    if (!tag || tag === 'All' || tag === 'all') return entries;
+    if (tag.toLowerCase() === 'drafts') {
+      return isAuthor ? loadEntries().filter(e => e.published === false) : [];
+    }
     const target = tag.toLowerCase().trim();
     return entries.filter(e => e.tags && e.tags.some(t => {
       const cleanT = t.toLowerCase().trim();
@@ -573,7 +580,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       subtitle: entry.subtitle || '',
       content: entry.body || entry.content || '',
       tag: tag,
-      published: true,
+      published: entry.published !== undefined ? Boolean(entry.published) : true,
       created_at: entry.createdAt || new Date().toISOString(),
       song_url: songUrl,
       song_title: songTitle,
@@ -632,7 +639,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       subtitle: entry.subtitle || '',
       content: entry.body || entry.content || '',
       tag: tag,
-      published: true,
+      published: entry.published !== undefined ? Boolean(entry.published) : true,
       song_url: songUrl,
       song_title: songTitle,
       song_artist: songArtist,

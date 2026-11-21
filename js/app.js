@@ -67,6 +67,8 @@ window.ZLog = window.ZLog || {};
     dom.canvasLinkBtn   = $('#canvas-link-btn');
     dom.canvasImageBtn  = $('#canvas-image-btn');
     dom.canvasImageInput = $('#canvas-image-input');
+    dom.canvasDoodleBtn = $('#canvas-doodle-btn');
+    dom.canvasDoodlePopover = $('#canvas-doodle-popover');
     dom.canvasSoundtrackToggle = $('#canvas-soundtrack-toggle');
     dom.canvasSoundtrackStrip = $('#canvas-soundtrack-strip');
     dom.canvasSoundtrackClose = $('#canvas-soundtrack-close');
@@ -74,6 +76,7 @@ window.ZLog = window.ZLog || {};
     dom.canvasStickyBtn = $('#canvas-sticky-btn');
     dom.canvasHrBtn     = $('#canvas-hr-btn');
     dom.canvasPreviewBtn = $('#canvas-preview-btn');
+    dom.canvasDraftBtn  = $('#canvas-draft-btn');
     dom.canvasPublishBtn = $('#canvas-publish-btn');
     dom.canvasScrollBody = $('#canvas-scroll-body');
     dom.canvasContainer = $('#canvas-container');
@@ -299,6 +302,8 @@ window.ZLog = window.ZLog || {};
     } else {
       document.body.classList.remove('author-mode');
     }
+    renderFilters();
+    renderFeed();
   }
 
   function showToast(msg) {
@@ -448,11 +453,25 @@ window.ZLog = window.ZLog || {};
 
   function renderFilters() {
     if (!dom.filterBar) return;
+    const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
     const allEntries = Data.loadEntries();
-    dom.filterBar.innerHTML = Data.TAGS.map((tag) => {
-      const count = tag.toLowerCase() === 'all'
-        ? allEntries.length
-        : Data.getFilteredEntries(tag).length;
+    const visibleEntries = isAuthor ? allEntries : allEntries.filter(e => e.published !== false);
+    const draftCount = allEntries.filter(e => e.published === false).length;
+
+    let tagsToRender = [...Data.TAGS];
+    if (isAuthor && draftCount > 0) {
+      tagsToRender.push('Drafts');
+    }
+
+    dom.filterBar.innerHTML = tagsToRender.map((tag) => {
+      let count = 0;
+      if (tag.toLowerCase() === 'all') {
+        count = visibleEntries.length;
+      } else if (tag.toLowerCase() === 'drafts') {
+        count = draftCount;
+      } else {
+        count = Data.getFilteredEntries(tag, isAuthor).length;
+      }
       const countPadded = String(count).padStart(2, '0');
       const isActive = tag.toLowerCase() === activeFilter.toLowerCase();
       const label = tag.toLowerCase();
@@ -513,6 +532,8 @@ window.ZLog = window.ZLog || {};
   }
 
   function renderEntryCard(entry, mdlMap) {
+    const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
+    const isDraft = entry.published === false;
     const coverHtml = entry.coverGradient
       ? `<div class="entry-cover"><div class="entry-cover-inner" style="background:${entry.coverGradient};"></div></div>`
       : '';
@@ -540,7 +561,6 @@ window.ZLog = window.ZLog || {};
             <span>${escapeHtml(displayLabel)}</span>
           </div>`;
       } else {
-        // Clean non-playable soundtrack note
         songPillHtml = `
           <div class="song-pill song-pill--note"
                title="Soundtrack note"
@@ -555,8 +575,12 @@ window.ZLog = window.ZLog || {};
       `<span class="dot"></span>` + formatTagBadge(t, entry.id, mdlMap)
     ).join('');
 
+    const draftTagHtml = isDraft
+      ? `<span class="draft-badge" title="Unpublished Draft">draft</span>`
+      : '';
+
     return `
-      <article class="diary-paper-slip entry-card" data-entry-id="${entry.id}">
+      <article class="diary-paper-slip entry-card${isDraft ? ' entry-card--draft' : ''}" data-entry-id="${entry.id}">
         <!-- V-notched botanical sage ribbon bookmark on top-right corner -->
         <div class="ribbon-bookmark" aria-hidden="true">
           <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
@@ -567,6 +591,7 @@ window.ZLog = window.ZLog || {};
           <span>${formatDate(entry.date || entry.createdAt)}</span>
           <span class="dot"></span>
           <span>${entry.readingTime || '?'} min read</span>
+          ${draftTagHtml}
           ${tagsMetaHtml}
           <button type="button" class="entry-edit-pill author-only" data-entry-id="${entry.id}" title="Edit this entry">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -583,11 +608,15 @@ window.ZLog = window.ZLog || {};
 
   function renderFeed() {
     renderFilters();
+    const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
     const allEntries = Data.loadEntries();
     const mdlMap = Data.getMightDeleteLaterMap(allEntries);
-    const entries = Data.getFilteredEntries(activeFilter);
+    const entries = Data.getFilteredEntries(activeFilter, isAuthor);
 
     if (entries.length === 0) {
+      const emptyMsg = activeFilter.toLowerCase() === 'drafts'
+        ? 'No drafts right now. All caught up!'
+        : 'Cool beans — nothing written here yet.';
       dom.feedColumn.innerHTML = `
         <div class="diary-paper-slip empty-state">
           <div class="ribbon-bookmark" aria-hidden="true">
@@ -601,7 +630,7 @@ window.ZLog = window.ZLog || {};
             <line x1="9" y1="13" x2="15" y2="13"/>
             <line x1="9" y1="17" x2="13" y2="17"/>
           </svg>
-          <p class="empty-state-text">Cool beans — nothing written here yet.</p>
+          <p class="empty-state-text">${emptyMsg}</p>
         </div>
       `;
       return;
@@ -661,7 +690,6 @@ window.ZLog = window.ZLog || {};
     if (tagBadge && tagBadge.dataset.filterTag) {
       e.stopPropagation();
       const filterKey = tagBadge.dataset.filterTag;
-      // Match against Data.TAGS
       const matched = Data.TAGS.find(t => t.toLowerCase() === filterKey || (filterKey.startsWith('might delete later') && t === 'might delete later'));
       if (matched) {
         activeFilter = matched;
@@ -676,6 +704,12 @@ window.ZLog = window.ZLog || {};
     const card = e.target.closest('.entry-card');
     if (card) {
       const id = card.dataset.entryId;
+      const entry = Data.getEntry(id);
+      const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
+      if (entry && entry.published === false && isAuthor) {
+        openEditor(entry);
+        return;
+      }
       openReader(id);
     }
   }
@@ -1200,6 +1234,12 @@ window.ZLog = window.ZLog || {};
     const entry = allEntries.find(e => e.id === entryId);
     if (!entry) return;
 
+    const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
+    if (entry.published === false && !isAuthor) {
+      showToast('This entry is currently an unpublished draft.');
+      return;
+    }
+
     const mdlMap = Data.getMightDeleteLaterMap(allEntries);
 
     let soundtrackHtml = '';
@@ -1630,6 +1670,116 @@ window.ZLog = window.ZLog || {};
     execCanvasCommand('createLink', cleanUrl);
   }
 
+  /* ═══════════════════════════════════════
+     SAGE DOODLES & SCRAPBOOK BLOCKS
+     ═══════════════════════════════════════ */
+
+  const SAGE_DOODLES = {
+    star: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 L13.5 9.5 L21 12 L13.5 14.5 L12 22 L10.5 14.5 L3 12 L10.5 9.5 Z"/></svg>`,
+    spiral: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a1.5 1.5 0 0 1 1.5 1.5 3 3 0 0 1-3 3 4.5 4.5 0 0 1-4.5-4.5 6 6 0 0 1 6-6 7.5 7.5 0 0 1 7.5 7.5 9 9 0 0 1-9 9"/></svg>`,
+    sprout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22 C 12 16, 8 13, 3 13 C 3 6, 9 2, 16 3 C 21 4, 22 10, 21 16 C 16 19, 13 22, 12 22 Z"/><path d="M12 22 C 13 15, 17 9, 21 5"/></svg>`,
+    heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5 C 12 20.5, 3.5 14.5, 3.5 8.5 A 4.5 4.5 0 0 1 12 6.5 A 4.5 4.5 0 0 1 20.5 8.5 C 20.5 14.5, 12 20.5, 12 20.5 Z"/></svg>`,
+    arrow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18 C 9 19, 15 15, 19 6 M 12 6 L 20 6 L 19 14"/></svg>`,
+    squiggle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12 Q 5 7, 8 12 T 14 12 T 20 12 T 24 12"/></svg>`
+  };
+
+  function insertScrapbookMedia(type, content, align = 'right', withTape = true) {
+    if (!dom.canvasBody) return;
+    dom.canvasBody.focus();
+
+    const sel = window.getSelection();
+    let range;
+    if (sel && sel.rangeCount > 0) {
+      range = sel.getRangeAt(0);
+    } else {
+      range = document.createRange();
+      range.selectNodeContents(dom.canvasBody);
+      range.collapse(false);
+    }
+
+    // Don't nest inside sticky note or another scrapbook block
+    let parent = range.commonAncestorContainer;
+    while (parent && parent !== dom.canvasBody) {
+      if (parent.classList && (parent.classList.contains('diary-sticky-note') || parent.classList.contains('scrapbook-block'))) {
+        return;
+      }
+      parent = parent.parentNode;
+    }
+
+    const block = document.createElement('figure');
+    block.className = `scrapbook-block align-${align}${withTape ? ' with-tape' : ''}`;
+    block.setAttribute('contenteditable', 'false');
+    block.dataset.align = align;
+    block.dataset.tape = withTape ? 'true' : 'false';
+
+    let innerHtml = '<div class="scrapbook-tape" aria-hidden="true"></div>';
+    if (type === 'image') {
+      innerHtml += `
+        <div class="scrapbook-inner">
+          <img src="${escapeHtml(content)}" alt="Journal photo" class="scrapbook-img">
+          <figcaption class="scrapbook-caption" contenteditable="true" placeholder="add note…"></figcaption>
+        </div>
+      `;
+    } else {
+      const svgMarkup = SAGE_DOODLES[content] || SAGE_DOODLES.star;
+      innerHtml += `
+        <div class="scrapbook-inner">
+          <div class="scrapbook-doodle-inner">
+            ${svgMarkup}
+          </div>
+          <figcaption class="scrapbook-caption" contenteditable="true" placeholder="add note…"></figcaption>
+        </div>
+      `;
+    }
+
+    block.innerHTML = innerHtml;
+    attachScrapbookToolbar(block);
+
+    range.deleteContents();
+    range.insertNode(block);
+
+    // Ensure a paragraph follows for continued writing
+    const nextNode = block.nextSibling;
+    if (!nextNode || (nextNode.nodeType === Node.TEXT_NODE && !nextNode.textContent.trim())) {
+      const p = document.createElement('p');
+      p.innerHTML = '<br>';
+      if (nextNode) {
+        block.parentNode.insertBefore(p, nextNode);
+      } else {
+        block.parentNode.appendChild(p);
+      }
+    }
+  }
+
+  function attachScrapbookToolbar(block) {
+    if (!block || block.querySelector('.scrapbook-toolbar')) return;
+    const align = block.dataset.align || 'right';
+    const hasTape = block.dataset.tape === 'true' || block.classList.contains('with-tape');
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'scrapbook-toolbar';
+    toolbar.setAttribute('contenteditable', 'false');
+    toolbar.innerHTML = `
+      <button type="button" class="sb-tool-btn${align === 'left' ? ' active' : ''}" data-align="left" title="Float Left">L</button>
+      <button type="button" class="sb-tool-btn${align === 'center' ? ' active' : ''}" data-align="center" title="Center">C</button>
+      <button type="button" class="sb-tool-btn${align === 'right' ? ' active' : ''}" data-align="right" title="Float Right">R</button>
+      <button type="button" class="sb-tool-btn${hasTape ? ' active' : ''}" data-toggle="tape" title="Washi Tape">tape</button>
+      <button type="button" class="sb-tool-btn sb-del-btn" title="Delete block">×</button>
+    `;
+    block.appendChild(toolbar);
+  }
+
+  function ensureScrapbookBlockEditorControls(container) {
+    if (!container) return;
+    container.querySelectorAll('.scrapbook-block').forEach(block => {
+      attachScrapbookToolbar(block);
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     STICKY NOTES & DRAGGING
+     ═══════════════════════════════════════ */
+
   function handleCanvasStickyNote() {
     if (isCanvasPreviewActive || !dom.canvasBody) return;
     dom.canvasBody.focus();
@@ -1646,10 +1796,10 @@ window.ZLog = window.ZLog || {};
       }
     }
 
-    // Prevent nesting inside another sticky note
+    // Prevent nesting inside another sticky note or scrapbook block
     let parent = range.commonAncestorContainer;
     while (parent && parent !== dom.canvasBody) {
-      if (parent.classList && parent.classList.contains('diary-sticky-note')) {
+      if (parent.classList && (parent.classList.contains('diary-sticky-note') || parent.classList.contains('scrapbook-block'))) {
         return;
       }
       parent = parent.parentNode;
@@ -1660,7 +1810,14 @@ window.ZLog = window.ZLog || {};
 
     const aside = document.createElement('aside');
     aside.className = 'diary-sticky-note';
-    aside.innerHTML = `<button type="button" class="sticky-note-del-btn" title="Remove sticky note" contenteditable="false" aria-label="Remove sticky note">×</button><p>${escapeHtml(noteText)}</p>`;
+    aside.dataset.offsetX = '0';
+    aside.dataset.offsetY = '0';
+    aside.style.transform = 'translate(0px, 0px) rotate(-1.5deg)';
+    aside.innerHTML = `
+      <button type="button" class="sticky-note-del-btn" title="Remove sticky note" contenteditable="false" aria-label="Remove sticky note">×</button>
+      <div class="sticky-note-drag-handle" title="Drag to reposition note" contenteditable="false"><span class="drag-dots" aria-hidden="true">⋮⋮</span></div>
+      <p>${escapeHtml(noteText)}</p>
+    `;
 
     range.deleteContents();
     range.insertNode(aside);
@@ -1677,6 +1834,8 @@ window.ZLog = window.ZLog || {};
       }
     }
 
+    initStickyNoteDragging(dom.canvasBody);
+
     // Place selection inside the sticky note
     const p = aside.querySelector('p');
     if (p && sel) {
@@ -1686,6 +1845,87 @@ window.ZLog = window.ZLog || {};
       sel.removeAllRanges();
       sel.addRange(newRange);
     }
+  }
+
+  function initStickyNoteDragging(container) {
+    if (!container) return;
+    container.querySelectorAll('.diary-sticky-note').forEach(note => {
+      if (note._dragAttached) return;
+      note._dragAttached = true;
+
+      if (!note.querySelector('.sticky-note-drag-handle')) {
+        const handle = document.createElement('div');
+        handle.className = 'sticky-note-drag-handle';
+        handle.setAttribute('contenteditable', 'false');
+        handle.setAttribute('title', 'Drag to reposition note');
+        handle.innerHTML = '<span class="drag-dots" aria-hidden="true">⋮⋮</span>';
+        note.insertBefore(handle, note.firstChild);
+      }
+
+      let curX = parseFloat(note.dataset.offsetX) || 0;
+      let curY = parseFloat(note.dataset.offsetY) || 0;
+      if (!note.dataset.offsetX && note.style.transform) {
+        const m = note.style.transform.match(/translate\(\s*(-?\d+(?:\.\d+)?)\s*px,\s*(-?\d+(?:\.\d+)?)\s*px\)/i);
+        if (m) {
+          curX = parseFloat(m[1]) || 0;
+          curY = parseFloat(m[2]) || 0;
+          note.dataset.offsetX = curX;
+          note.dataset.offsetY = curY;
+        }
+      }
+
+      let isDragging = false;
+      let startX = 0;
+      let startY = 0;
+      let startOffsetX = 0;
+      let startOffsetY = 0;
+
+      const handlePointerDown = (e) => {
+        if (e.target.closest('.sticky-note-del-btn')) return;
+
+        const isHandle = e.target.closest('.sticky-note-drag-handle');
+        const rect = note.getBoundingClientRect();
+        const isTopEdge = (e.clientY - rect.top) <= 24;
+
+        if (!isHandle && !isTopEdge && e.target.closest('p, ul, ol, li')) {
+          return;
+        }
+
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startOffsetX = parseFloat(note.dataset.offsetX) || 0;
+        startOffsetY = parseFloat(note.dataset.offsetY) || 0;
+
+        try { note.setPointerCapture(e.pointerId); } catch (_) {}
+        note.classList.add('is-dragging');
+        e.preventDefault();
+      };
+
+      const handlePointerMove = (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const nextX = Math.round(startOffsetX + dx);
+        const nextY = Math.round(startOffsetY + dy);
+
+        note.dataset.offsetX = nextX;
+        note.dataset.offsetY = nextY;
+        note.style.transform = `translate(${nextX}px, ${nextY}px) rotate(-1.5deg)`;
+      };
+
+      const handlePointerUp = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        try { note.releasePointerCapture(e.pointerId); } catch (_) {}
+        note.classList.remove('is-dragging');
+      };
+
+      note.addEventListener('pointerdown', handlePointerDown);
+      note.addEventListener('pointermove', handlePointerMove);
+      note.addEventListener('pointerup', handlePointerUp);
+      note.addEventListener('pointercancel', handlePointerUp);
+    });
   }
 
   function ensureStickyNoteEditorControls(container) {
@@ -1702,12 +1942,18 @@ window.ZLog = window.ZLog || {};
         note.insertBefore(btn, note.firstChild);
       }
     });
+    initStickyNoteDragging(container);
   }
 
   function getCleanCanvasBodyHtml() {
     if (!dom.canvasBody) return '';
     const clone = dom.canvasBody.cloneNode(true);
     clone.querySelectorAll('.sticky-note-del-btn').forEach(btn => btn.remove());
+    clone.querySelectorAll('.sticky-note-drag-handle').forEach(h => h.remove());
+    clone.querySelectorAll('.scrapbook-toolbar').forEach(tb => tb.remove());
+    clone.querySelectorAll('.diary-sticky-note').forEach(note => {
+      note.classList.remove('is-dragging');
+    });
     return clone.innerHTML.trim();
   }
 
@@ -1820,6 +2066,7 @@ window.ZLog = window.ZLog || {};
       if (dom.canvasBody) {
         dom.canvasBody.innerHTML = entryToEdit.body || entryToEdit.content || '';
         ensureStickyNoteEditorControls(dom.canvasBody);
+        ensureScrapbookBlockEditorControls(dom.canvasBody);
       }
 
       // Pre-select category tag
@@ -1896,28 +2143,40 @@ window.ZLog = window.ZLog || {};
     if (publishBtnSpan) publishBtnSpan.textContent = 'Publish';
   }
 
-  function handleCanvasPublish() {
+  function handleCanvasSave(isDraft = false) {
     let title = dom.canvasTitle ? dom.canvasTitle.value.trim() : '';
 
-    // Smart Blank-Title Fallback
-    if (!title) {
-      const now = new Date();
-      const monthDay = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (isDraft) {
+      if (!title) {
+        const now = new Date();
+        const monthDay = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        if (selectedCanvasCategory) {
+          title = `${selectedCanvasCategory} (draft) — ${monthDay}`;
+        } else {
+          title = `draft entry — ${monthDay}`;
+        }
+      }
+    } else {
+      // Smart Blank-Title Fallback for Publishing
+      if (!title) {
+        const now = new Date();
+        const monthDay = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-      if (selectedCanvasCategory === 'might delete later') {
-        const nextNum = getNextMdlNumber();
-        title = `might delete later #${nextNum}`;
-      } else if (selectedCanvasCategory === 'nocturnal thoughts') {
-        title = `nocturnal thoughts — ${monthDay}`;
-      } else if (selectedCanvasCategory === 'rants') {
-        title = `rants — ${monthDay}`;
-      } else if (selectedCanvasCategory === 'brain dump') {
-        title = `brain dump — ${monthDay}`;
-      } else {
-        alert('Please enter a title, or pick a Quick Tag (might delete later, nocturnal thoughts, rants, brain dump) for an automatic editorial title.');
-        if (isCanvasPreviewActive) toggleCanvasPreview();
-        if (dom.canvasTitle) dom.canvasTitle.focus();
-        return;
+        if (selectedCanvasCategory === 'might delete later') {
+          const nextNum = getNextMdlNumber();
+          title = `might delete later #${nextNum}`;
+        } else if (selectedCanvasCategory === 'nocturnal thoughts') {
+          title = `nocturnal thoughts — ${monthDay}`;
+        } else if (selectedCanvasCategory === 'rants') {
+          title = `rants — ${monthDay}`;
+        } else if (selectedCanvasCategory === 'brain dump') {
+          title = `brain dump — ${monthDay}`;
+        } else {
+          alert('Please enter a title, or pick a Quick Tag (might delete later, nocturnal thoughts, rants, brain dump) for an automatic editorial title.');
+          if (isCanvasPreviewActive) toggleCanvasPreview();
+          if (dom.canvasTitle) dom.canvasTitle.focus();
+          return;
+        }
       }
     }
 
@@ -1938,11 +2197,15 @@ window.ZLog = window.ZLog || {};
     }
 
     let rawBody = getCleanCanvasBodyHtml();
-    if (!rawBody || rawBody === '<br>') {
+    if (!isDraft && (!rawBody || rawBody === '<br>')) {
       alert('Please write something in your entry before publishing.');
       if (isCanvasPreviewActive) toggleCanvasPreview();
       if (dom.canvasBody) dom.canvasBody.focus();
       return;
+    }
+
+    if (!rawBody || rawBody === '<br>') {
+      rawBody = '<p></p>';
     }
 
     // Wrap plain lines in <p> if missing block markup
@@ -1965,27 +2228,46 @@ window.ZLog = window.ZLog || {};
       body: rawBody,
       coverGradient,
       readingTime: readingTime,
-      reading_time: readingTime
+      reading_time: readingTime,
+      published: !isDraft
     };
 
     const isEdit = Boolean(editingPostId);
     const targetId = editingPostId;
 
     const publishBtnSpan = dom.canvasPublishBtn ? dom.canvasPublishBtn.querySelector('span') : null;
-    if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = true;
-    if (publishBtnSpan) publishBtnSpan.textContent = isEdit ? 'Saving…' : 'Publishing…';
+    const draftBtnSpan = dom.canvasDraftBtn ? dom.canvasDraftBtn.querySelector('span') : null;
+
+    if (isDraft) {
+      if (dom.canvasDraftBtn) dom.canvasDraftBtn.disabled = true;
+      if (draftBtnSpan) draftBtnSpan.textContent = 'Saving…';
+    } else {
+      if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = true;
+      if (publishBtnSpan) publishBtnSpan.textContent = isEdit ? 'Saving…' : 'Publishing…';
+    }
 
     const savePromise = isEdit
       ? Data.updateLivePost(targetId, entry)
       : Data.insertLivePost(entry);
 
-    savePromise.then(() => {
-      closeEditor();
-      syncAndRenderPosts();
-      if (isEdit && readerOpen && dom.singleEntryView && dom.singleEntryView.style.display !== 'none') {
-        openReader(targetId, false);
+    savePromise.then((saved) => {
+      if (isDraft) {
+        if (saved && saved.id) {
+          editingPostId = saved.id;
+        }
+        if (dom.canvasTitle && !dom.canvasTitle.value.trim()) {
+          dom.canvasTitle.value = title;
+        }
+        syncAndRenderPosts();
+        showToast(isEdit ? 'Draft updated.' : 'Saved as draft.');
+      } else {
+        closeEditor();
+        syncAndRenderPosts();
+        if (isEdit && readerOpen && dom.singleEntryView && dom.singleEntryView.style.display !== 'none') {
+          openReader(targetId, false);
+        }
+        showToast(isEdit ? 'Entry updated in Supabase!' : 'Entry published live to Supabase!');
       }
-      showToast(isEdit ? 'Entry updated in Supabase!' : 'Entry published live to Supabase!');
     }).catch(err => {
       console.error('Save error:', err);
       if (!err || !err._alerted) {
@@ -1993,7 +2275,9 @@ window.ZLog = window.ZLog || {};
       }
     }).finally(() => {
       if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = false;
+      if (dom.canvasDraftBtn) dom.canvasDraftBtn.disabled = false;
       if (publishBtnSpan) publishBtnSpan.textContent = isEdit ? 'Save Changes' : 'Publish';
+      if (draftBtnSpan) draftBtnSpan.textContent = 'Save as Draft';
     });
   }
 
@@ -2724,7 +3008,7 @@ window.ZLog = window.ZLog || {};
         } else {
           const url = prompt('Enter image URL:');
           if (url && url.trim()) {
-            execCanvasCommand('insertImage', url.trim());
+            insertScrapbookMedia('image', url.trim(), 'right', true);
           }
         }
       });
@@ -2736,10 +3020,38 @@ window.ZLog = window.ZLog || {};
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
-          execCanvasCommand('insertImage', event.target.result);
+          insertScrapbookMedia('image', event.target.result, 'right', true);
         };
         reader.readAsDataURL(file);
         e.target.value = '';
+      });
+    }
+
+    // Sage Doodle Popover
+    if (dom.canvasDoodleBtn && dom.canvasDoodlePopover) {
+      dom.canvasDoodleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isCanvasPreviewActive) return;
+        const isOpen = dom.canvasDoodlePopover.classList.toggle('open');
+        dom.canvasDoodleBtn.classList.toggle('active', isOpen);
+      });
+
+      dom.canvasDoodlePopover.addEventListener('click', (e) => {
+        const btn = e.target.closest('.doodle-pick-btn');
+        if (!btn) return;
+        e.preventDefault();
+        const doodleName = btn.dataset.doodle;
+        insertScrapbookMedia('doodle', doodleName, 'right', true);
+        dom.canvasDoodlePopover.classList.remove('open');
+        if (dom.canvasDoodleBtn) dom.canvasDoodleBtn.classList.remove('active');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (dom.canvasDoodlePopover && !dom.canvasDoodlePopover.contains(e.target) && e.target !== dom.canvasDoodleBtn && !dom.canvasDoodleBtn.contains(e.target)) {
+          dom.canvasDoodlePopover.classList.remove('open');
+          if (dom.canvasDoodleBtn) dom.canvasDoodleBtn.classList.remove('active');
+        }
       });
     }
 
@@ -2781,9 +3093,10 @@ window.ZLog = window.ZLog || {};
       });
     }
 
-    // Canvas Body Click (Delete Sticky Note)
+    // Canvas Body Click (Delete Sticky Note & Scrapbook block toolbar actions)
     if (dom.canvasBody) {
       dom.canvasBody.addEventListener('click', (e) => {
+        // Sticky note delete
         const delBtn = e.target.closest('.sticky-note-del-btn');
         if (delBtn) {
           e.preventDefault();
@@ -2791,6 +3104,39 @@ window.ZLog = window.ZLog || {};
           const note = delBtn.closest('.diary-sticky-note');
           if (note) {
             note.remove();
+          }
+          return;
+        }
+
+        // Scrapbook block toolbar buttons
+        const sbBtn = e.target.closest('.sb-tool-btn');
+        if (sbBtn) {
+          e.preventDefault();
+          e.stopPropagation();
+          const block = sbBtn.closest('.scrapbook-block');
+          if (!block) return;
+
+          if (sbBtn.classList.contains('sb-del-btn')) {
+            block.remove();
+            return;
+          }
+
+          if (sbBtn.dataset.align) {
+            const align = sbBtn.dataset.align;
+            block.classList.remove('align-left', 'align-center', 'align-right');
+            block.classList.add(`align-${align}`);
+            block.dataset.align = align;
+            block.querySelectorAll('.sb-tool-btn[data-align]').forEach(b => {
+              b.classList.toggle('active', b.dataset.align === align);
+            });
+            return;
+          }
+
+          if (sbBtn.dataset.toggle === 'tape') {
+            const hasTape = block.classList.toggle('with-tape');
+            block.dataset.tape = hasTape ? 'true' : 'false';
+            sbBtn.classList.toggle('active', hasTape);
+            return;
           }
         }
       });
@@ -2804,11 +3150,19 @@ window.ZLog = window.ZLog || {};
       });
     }
 
+    // Save as Draft button
+    if (dom.canvasDraftBtn) {
+      dom.canvasDraftBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleCanvasSave(true);
+      });
+    }
+
     // Publish button
     if (dom.canvasPublishBtn) {
       dom.canvasPublishBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        handleCanvasPublish();
+        handleCanvasSave(false);
       });
     }
 

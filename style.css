@@ -2939,6 +2939,274 @@ body.author-mode .polaroid-quote-strip:hover {
   transform: translateY(-1px);
 }
 
+.canvas-draft-btn {
+  background: var(--bg-card, #FFFFFF) !important;
+  color: var(--ink) !important;
+  border: 1px solid #DCE5D5 !important;
+  border-radius: 9999px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-base);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 4px rgba(30, 46, 36, 0.05);
+}
+
+.canvas-draft-btn:hover {
+  background: var(--surface-soft, #EDF3E8) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  transform: translateY(-1px);
+}
+
+.canvas-draft-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Doodle Picker Popover ── */
+.canvas-popover-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.canvas-doodle-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #FFFFFF;
+  border: 1px solid #DCE5D5;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px -4px rgba(30, 46, 36, 0.15);
+  padding: 6px 8px;
+  display: none;
+  gap: 6px;
+  align-items: center;
+  z-index: 100;
+}
+
+.canvas-doodle-popover.open {
+  display: flex;
+}
+
+.doodle-pick-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.doodle-pick-btn:hover {
+  background: var(--surface-soft, #EDF3E8);
+  border-color: #DCE5D5;
+  transform: scale(1.08);
+}
+
+/* ── Inline Photos & Sage Doodles Beside Text (Scrapbook Block) ── */
+.scrapbook-block {
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid #DCE5D5;
+  border-radius: 2px;
+  padding: 10px 10px 8px 10px;
+  box-shadow: 0 6px 20px -6px rgba(30, 46, 36, 0.12);
+  transition: box-shadow 0.2s ease;
+  user-select: text;
+}
+
+.scrapbook-block:hover {
+  box-shadow: 0 10px 24px -6px rgba(30, 46, 36, 0.18);
+}
+
+/* Washi tape strip */
+.scrapbook-tape {
+  display: none;
+}
+
+.scrapbook-block.with-tape .scrapbook-tape {
+  display: block;
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 14px;
+  background: rgba(195, 217, 186, 0.85);
+  border: 1px solid rgba(162, 192, 150, 0.5);
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.scrapbook-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scrapbook-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 1px;
+  border: 1px solid rgba(220, 229, 213, 0.6);
+  object-fit: cover;
+}
+
+.scrapbook-doodle-inner {
+  min-width: 140px;
+  min-height: 110px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-soft, #F7F9F4);
+  border-radius: 2px;
+}
+
+.scrapbook-doodle-inner svg {
+  color: var(--accent);
+  stroke: var(--accent);
+  width: 48px;
+  height: 48px;
+  display: block;
+}
+
+.scrapbook-caption {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.4;
+  outline: none;
+  width: 100%;
+}
+
+.scrapbook-caption:empty:before {
+  content: attr(placeholder);
+  color: var(--ink-muted);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Float Alignments (Responsive) */
+.scrapbook-block.align-left {
+  float: left;
+  margin: 6px 22px 14px 0;
+  max-width: 280px;
+  clear: left;
+}
+
+.scrapbook-block.align-right {
+  float: right;
+  margin: 6px 0 14px 22px;
+  max-width: 280px;
+  clear: right;
+}
+
+.scrapbook-block.align-center {
+  display: block;
+  float: none;
+  margin: 20px auto;
+  max-width: 440px;
+  clear: both;
+}
+
+@media (max-width: 640px) {
+  .scrapbook-block.align-left,
+  .scrapbook-block.align-right {
+    float: none !important;
+    margin: 16px auto !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Scrapbook Block Toolbar (Editor Only) */
+.scrapbook-toolbar {
+  position: absolute;
+  top: -30px;
+  right: 0;
+  display: none;
+  align-items: center;
+  gap: 3px;
+  background: #FFFFFF;
+  border: 1px solid #DCE5D5;
+  border-radius: 6px;
+  padding: 2px 4px;
+  box-shadow: 0 4px 12px rgba(30, 46, 36, 0.12);
+  z-index: 20;
+}
+
+.scrapbook-block:hover .scrapbook-toolbar,
+.scrapbook-block:focus-within .scrapbook-toolbar {
+  display: flex;
+}
+
+.sb-tool-btn {
+  font-family: var(--font-base);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sb-tool-btn:hover {
+  background: var(--surface-soft);
+  color: var(--accent);
+}
+
+.sb-tool-btn.active {
+  background: var(--accent-tint);
+  border-color: var(--accent-light);
+  color: var(--accent);
+}
+
+.sb-tool-btn.sb-del-btn {
+  color: #B2533E;
+  font-weight: 700;
+}
+
+.sb-tool-btn.sb-del-btn:hover {
+  background: rgba(178, 83, 62, 0.15);
+}
+
+/* ── Drafts Badge ── */
+.draft-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-base);
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: var(--surface-soft);
+  border: 1px solid #DCE5D5;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 /* Centered Writing Canvas (Analog Dotted Paper Sheet) */
 .canvas-scroll-body {
   flex: 1;
@@ -3337,7 +3605,7 @@ body.author-mode .polaroid-quote-strip:hover {
   color: #1E2E24;
   border: 1px solid #C3D9BA;
   border-radius: 2px;
-  padding: 22px 20px 18px 20px;
+  padding: 24px 20px 18px 20px;
   max-width: 280px;
   transform: rotate(-1.5deg);
   box-shadow: 0 8px 20px -8px rgba(30, 46, 36, 0.14);
@@ -3347,12 +3615,48 @@ body.author-mode .polaroid-quote-strip:hover {
   box-sizing: border-box;
   margin: 24px auto;
   width: 100%;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition: box-shadow 0.2s var(--ease);
+  touch-action: none;
 }
 
 .diary-sticky-note:hover {
-  transform: rotate(-0.5deg) scale(1.01);
   box-shadow: 0 10px 24px -6px rgba(30, 46, 36, 0.2);
+}
+
+.diary-sticky-note.is-dragging {
+  box-shadow: 0 18px 36px -6px rgba(30, 46, 36, 0.3) !important;
+  z-index: 50 !important;
+  cursor: grabbing !important;
+  opacity: 0.95;
+}
+
+.sticky-note-drag-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 24px;
+  height: 20px;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  user-select: none;
+}
+
+.sticky-note-drag-handle:active {
+  cursor: grabbing;
+}
+
+.sticky-note-drag-handle .drag-dots {
+  font-size: 10px;
+  color: rgba(30, 46, 36, 0.3);
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.sticky-note-drag-handle:hover .drag-dots {
+  color: rgba(30, 46, 36, 0.65);
 }
 
 /* Translucent top adhesive strip highlight */
