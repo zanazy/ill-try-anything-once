@@ -838,10 +838,57 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     });
   }
 
+  async function uploadImageToStorage(fileOrDataUrl) {
+    const sb = getSupabase();
+    if (!sb || !sb.storage) return null;
+    try {
+      let blob = null;
+      let ext = 'webp';
+      let contentType = 'image/webp';
+
+      if (typeof fileOrDataUrl === 'string' && fileOrDataUrl.startsWith('data:')) {
+        const mimeMatch = fileOrDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+        if (mimeMatch) {
+          contentType = mimeMatch[1];
+          ext = contentType.includes('webp') ? 'webp' : (contentType.includes('png') ? 'png' : 'jpg');
+          const byteChars = atob(mimeMatch[2]);
+          const byteNumbers = new Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) {
+            byteNumbers[i] = byteChars.charCodeAt(i);
+          }
+          blob = new Blob([new Uint8Array(byteNumbers)], { type: contentType });
+        }
+      } else if (fileOrDataUrl instanceof Blob) {
+        blob = fileOrDataUrl;
+        contentType = blob.type || 'image/jpeg';
+        ext = contentType.includes('webp') ? 'webp' : 'jpg';
+      }
+
+      if (!blob) return null;
+
+      const filename = `entry_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { data, error } = await sb.storage.from('diary-images').upload(filename, blob, {
+        contentType: contentType,
+        upsert: false
+      });
+
+      if (!error && data) {
+        const { data: pubData } = sb.storage.from('diary-images').getPublicUrl(filename);
+        if (pubData && pubData.publicUrl) {
+          return pubData.publicUrl;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase storage upload note (fallback to compressed data URL):', err);
+    }
+    return null;
+  }
+
   /* ── Public API ── */
   Z.Data = {
     TAGS,
     getSupabase,
+    uploadImageToStorage,
     fetchLivePosts,
     fetchLiveStatus,
     saveLiveStatus,

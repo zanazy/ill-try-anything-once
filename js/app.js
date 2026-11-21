@@ -67,6 +67,10 @@ window.ZLog = window.ZLog || {};
     dom.canvasLinkBtn   = $('#canvas-link-btn');
     dom.canvasImageBtn  = $('#canvas-image-btn');
     dom.canvasImageInput = $('#canvas-image-input');
+    dom.canvasImageUrlBtn = $('#canvas-image-url-btn');
+    dom.canvasImageUrlPopover = $('#canvas-image-url-popover');
+    dom.canvasImageUrlInput = $('#canvas-image-url-input');
+    dom.canvasImageUrlSubmit = $('#canvas-image-url-submit');
     dom.canvasDoodleBtn = $('#canvas-doodle-btn');
     dom.canvasDoodlePopover = $('#canvas-doodle-popover');
     dom.canvasSoundtrackToggle = $('#canvas-soundtrack-toggle');
@@ -1346,10 +1350,10 @@ window.ZLog = window.ZLog || {};
       `<span class="dot"></span>` + formatTagBadge(t, entry.id, mdlMap)
     ).join('');
 
-    // Process body — wrap plain text in <p> tags if needed
+    // Process body — preserve HTML blocks (figures, images, headings, sticky notes)
     let body = entry.body || '';
-    if (!body.includes('<p>')) {
-      body = body.split('\n\n').map(p => `<p>${p.trim()}</p>`).join('\n');
+    if (!/<(p|h2|h3|blockquote|ul|ol|figure|div|aside|img)/i.test(body)) {
+      body = body.split(/\n{2,}/).map(p => `<p>${p.trim()}</p>`).join('\n');
     }
 
     const singleContainer = dom.singleEntryView || dom.readerContent;
@@ -1832,28 +1836,65 @@ window.ZLog = window.ZLog || {};
     squiggle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12 Q 5 7, 8 12 T 14 12 T 20 12 T 24 12"/></svg>`
   };
 
+  function compressImageFile(file, maxWidth = 1000, quality = 0.82) {
+    return new Promise((resolve, reject) => {
+      if (!file || !file.type.startsWith('image/')) {
+        return reject(new Error('Selected file is not an image.'));
+      }
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        try {
+          let width = img.naturalWidth || img.width;
+          let height = img.naturalHeight || img.height;
+
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return reject(new Error('Failed to create canvas 2D context.'));
+          }
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+
+          let dataUrl = '';
+          try {
+            dataUrl = canvas.toDataURL('image/webp', quality);
+            if (!dataUrl || !dataUrl.startsWith('data:image/webp')) {
+              dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+          } catch (_) {
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          resolve(dataUrl);
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Could not read image file. Please try another image.'));
+      };
+
+      img.src = objectUrl;
+    });
+  }
+
   function insertScrapbookMedia(type, content, align = 'right', withTape = true) {
     if (!dom.canvasBody) return;
-    dom.canvasBody.focus();
-
-    const sel = window.getSelection();
-    let range;
-    if (sel && sel.rangeCount > 0) {
-      range = sel.getRangeAt(0);
-    } else {
-      range = document.createRange();
-      range.selectNodeContents(dom.canvasBody);
-      range.collapse(false);
-    }
-
-    // Don't nest inside sticky note or another scrapbook block
-    let parent = range.commonAncestorContainer;
-    while (parent && parent !== dom.canvasBody) {
-      if (parent.classList && (parent.classList.contains('diary-sticky-note') || parent.classList.contains('scrapbook-block'))) {
-        return;
-      }
-      parent = parent.parentNode;
-    }
 
     const block = document.createElement('figure');
     block.className = `scrapbook-block diary-media-block align-${align}${withTape ? ' with-tape' : ''}`;
@@ -1866,7 +1907,7 @@ window.ZLog = window.ZLog || {};
     if (type === 'image') {
       innerHtml += `
         <div class="scrapbook-inner">
-          <img src="${escapeHtml(content)}" alt="Journal photo" class="scrapbook-img">
+          <img src="${escapeHtml(content)}" alt="Journal photo" class="scrapbook-img" loading="lazy">
           <figcaption class="scrapbook-caption" contenteditable="true" placeholder="add note…"></figcaption>
         </div>
       `;
@@ -1886,14 +1927,38 @@ window.ZLog = window.ZLog || {};
     attachScrapbookToolbar(block);
     attachMediaBlockDnD(block);
 
-    range.deleteContents();
-    range.insertNode(block);
+    // Determine insertion position:
+    const sel = window.getSelection();
+    let inserted = false;
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      if (dom.canvasBody.contains(range.commonAncestorContainer)) {
+        let cur = range.commonAncestorContainer;
+        let isNested = false;
+        while (cur && cur !== dom.canvasBody) {
+          if (cur.classList && (cur.classList.contains('diary-sticky-note') || cur.classList.contains('scrapbook-block') || cur.classList.contains('diary-media-block'))) {
+            isNested = true;
+            break;
+          }
+          cur = cur.parentNode;
+        }
+
+        if (!isNested) {
+          range.deleteContents();
+          range.insertNode(block);
+          inserted = true;
+        }
+      }
+    }
+
+    // Fallback: If not focused or cursor outside canvasBody, append cleanly to end of canvasBody
+    if (!inserted) {
+      dom.canvasBody.appendChild(block);
+    }
 
     // Select the newly inserted block
-    if (dom.canvasBody) {
-      dom.canvasBody.querySelectorAll('.scrapbook-block, .diary-media-block').forEach(b => b.classList.remove('is-selected'));
-      block.classList.add('is-selected');
-    }
+    dom.canvasBody.querySelectorAll('.scrapbook-block, .diary-media-block').forEach(b => b.classList.remove('is-selected'));
+    block.classList.add('is-selected');
 
     // Ensure a paragraph follows for continued writing
     const nextNode = block.nextSibling;
@@ -1906,6 +1971,10 @@ window.ZLog = window.ZLog || {};
         block.parentNode.appendChild(p);
       }
     }
+
+    try {
+      block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (_) {}
   }
 
   function attachScrapbookToolbar(block) {
@@ -3402,33 +3471,99 @@ window.ZLog = window.ZLog || {};
       });
     }
 
-    // Image Upload / URL
+    // Direct Image Upload (Native File Picker Immediately — No confirm / prompt / modal)
     if (dom.canvasImageBtn) {
       dom.canvasImageBtn.addEventListener('click', (e) => {
         e.preventDefault();
         if (isCanvasPreviewActive) return;
-        const choice = confirm('Click OK to upload an image from your device, or Cancel to paste an image URL.');
-        if (choice) {
-          if (dom.canvasImageInput) dom.canvasImageInput.click();
-        } else {
-          const url = prompt('Enter image URL:');
-          if (url && url.trim()) {
-            insertScrapbookMedia('image', url.trim(), 'right', true);
-          }
+        if (dom.canvasImageInput) {
+          dom.canvasImageInput.click();
         }
       });
     }
 
     if (dom.canvasImageInput) {
-      dom.canvasImageInput.addEventListener('change', (e) => {
+      dom.canvasImageInput.addEventListener('change', async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          insertScrapbookMedia('image', event.target.result, 'right', true);
-        };
-        reader.readAsDataURL(file);
-        e.target.value = '';
+
+        try {
+          showToast('Preparing photo…');
+          const compressedDataUrl = await compressImageFile(file, 1000, 0.82);
+
+          // If Supabase Storage is configured, try uploading; otherwise use compressed Data URL
+          let finalSrc = compressedDataUrl;
+          if (Data.uploadImageToStorage) {
+            try {
+              const uploadedUrl = await Data.uploadImageToStorage(compressedDataUrl);
+              if (uploadedUrl) {
+                finalSrc = uploadedUrl;
+              }
+            } catch (storageErr) {
+              console.warn('Supabase storage upload note:', storageErr);
+            }
+          }
+
+          insertScrapbookMedia('image', finalSrc, 'right', true);
+          showToast('Photo inserted!');
+        } catch (err) {
+          console.error('Image compression error:', err);
+          alert('Could not insert photo: ' + (err.message || 'Error processing image.'));
+        } finally {
+          e.target.value = '';
+        }
+      });
+    }
+
+    // Optional Image Link Popover (Separate small button — never blocks direct upload)
+    if (dom.canvasImageUrlBtn && dom.canvasImageUrlPopover) {
+      dom.canvasImageUrlBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isCanvasPreviewActive) return;
+        const isOpen = dom.canvasImageUrlPopover.style.display !== 'none';
+        dom.canvasImageUrlPopover.style.display = isOpen ? 'none' : 'flex';
+        dom.canvasImageUrlBtn.classList.toggle('active', !isOpen);
+        if (!isOpen && dom.canvasImageUrlInput) {
+          setTimeout(() => dom.canvasImageUrlInput.focus(), 50);
+        }
+      });
+
+      const handleUrlInsert = () => {
+        if (!dom.canvasImageUrlInput) return;
+        const url = dom.canvasImageUrlInput.value.trim();
+        if (url) {
+          insertScrapbookMedia('image', url, 'right', true);
+          dom.canvasImageUrlInput.value = '';
+          dom.canvasImageUrlPopover.style.display = 'none';
+          if (dom.canvasImageUrlBtn) dom.canvasImageUrlBtn.classList.remove('active');
+          showToast('Photo placed in entry!');
+        }
+      };
+
+      if (dom.canvasImageUrlSubmit) {
+        dom.canvasImageUrlSubmit.addEventListener('click', (e) => {
+          e.preventDefault();
+          handleUrlInsert();
+        });
+      }
+
+      if (dom.canvasImageUrlInput) {
+        dom.canvasImageUrlInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleUrlInsert();
+          }
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        if (dom.canvasImageUrlPopover && dom.canvasImageUrlPopover.style.display !== 'none') {
+          if (!dom.canvasImageUrlPopover.contains(e.target) && e.target !== dom.canvasImageUrlBtn && !dom.canvasImageUrlBtn.contains(e.target)) {
+            dom.canvasImageUrlPopover.style.display = 'none';
+            if (dom.canvasImageUrlBtn) dom.canvasImageUrlBtn.classList.remove('active');
+          }
+        }
       });
     }
 

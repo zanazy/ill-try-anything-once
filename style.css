@@ -3017,7 +3017,7 @@ body.author-mode .polaroid-quote-strip:hover {
   transform: none;
 }
 
-/* ── Doodle Picker Popover ── */
+/* ── Doodle Picker & Image Link Popovers ── */
 .canvas-popover-anchor {
   position: relative;
   display: inline-flex;
@@ -3063,8 +3063,51 @@ body.author-mode .polaroid-quote-strip:hover {
   transform: scale(1.08);
 }
 
+/* Image URL Popover */
+.canvas-image-url-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #FFFFFF;
+  border: 1px solid #DCE5D5;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px -4px rgba(30, 46, 36, 0.15);
+  padding: 8px 10px;
+  display: none;
+  gap: 8px;
+  align-items: center;
+  z-index: 100;
+  min-width: 270px;
+}
+
+[data-theme="dark"] .canvas-image-url-popover {
+  background: #1B271F;
+  border-color: #26352B;
+}
+
+.canvas-popover-submit-btn {
+  background: var(--accent);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: var(--font-base);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.canvas-popover-submit-btn:hover {
+  background: var(--accent-hover);
+}
+
 /* ── Inline Photos & Sage Doodles Beside Text (Scrapbook Block) ── */
-.scrapbook-block {
+.scrapbook-block,
+.diary-media-block {
+  display: block;
   position: relative;
   background: #FFFFFF;
   border: 1px solid #DCE5D5;
@@ -3073,9 +3116,20 @@ body.author-mode .polaroid-quote-strip:hover {
   box-shadow: 0 6px 20px -6px rgba(30, 46, 36, 0.12);
   transition: box-shadow 0.2s ease;
   user-select: text;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  box-sizing: border-box;
 }
 
-.scrapbook-block:hover {
+[data-theme="dark"] .scrapbook-block,
+[data-theme="dark"] .diary-media-block {
+  background: #1B271F;
+  border-color: #26352B;
+}
+
+.scrapbook-block:hover,
+.diary-media-block:hover {
   box-shadow: 0 10px 24px -6px rgba(30, 46, 36, 0.18);
 }
 
@@ -3084,7 +3138,8 @@ body.author-mode .polaroid-quote-strip:hover {
   display: none;
 }
 
-.scrapbook-block.with-tape .scrapbook-tape {
+.scrapbook-block.with-tape .scrapbook-tape,
+.diary-media-block.with-tape .scrapbook-tape {
   display: block;
   position: absolute;
   top: -8px;
@@ -3103,15 +3158,20 @@ body.author-mode .polaroid-quote-strip:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 
-.scrapbook-img {
-  display: block;
-  width: 100%;
-  height: auto;
+.scrapbook-img,
+.scrapbook-block img,
+.diary-media-block img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
   border-radius: 1px;
   border: 1px solid rgba(220, 229, 213, 0.6);
   object-fit: cover;
+  margin: 0 !important;
 }
 
 .scrapbook-doodle-inner {
@@ -3152,21 +3212,24 @@ body.author-mode .polaroid-quote-strip:hover {
 }
 
 /* Float Alignments (Responsive) */
-.scrapbook-block.align-left {
+.scrapbook-block.align-left,
+.diary-media-block.align-left {
   float: left;
   margin: 6px 22px 14px 0;
-  max-width: 280px;
+  max-width: 300px;
   clear: left;
 }
 
-.scrapbook-block.align-right {
+.scrapbook-block.align-right,
+.diary-media-block.align-right {
   float: right;
   margin: 6px 0 14px 22px;
-  max-width: 280px;
+  max-width: 300px;
   clear: right;
 }
 
-.scrapbook-block.align-center {
+.scrapbook-block.align-center,
+.diary-media-block.align-center {
   display: block;
   float: none;
   margin: 20px auto;
@@ -3176,11 +3239,39 @@ body.author-mode .polaroid-quote-strip:hover {
 
 @media (max-width: 640px) {
   .scrapbook-block.align-left,
-  .scrapbook-block.align-right {
+  .scrapbook-block.align-right,
+  .diary-media-block.align-left,
+  .diary-media-block.align-right {
     float: none !important;
     margin: 16px auto !important;
     max-width: 100% !important;
   }
+}
+
+/* Reader Body Image & Media Block Overrides */
+.reader-body .scrapbook-block,
+.reader-body .diary-media-block {
+  display: block;
+  max-width: 320px;
+  width: 100%;
+  height: auto;
+  margin-bottom: 1.5em;
+}
+
+.reader-body .scrapbook-inner img,
+.reader-body .diary-media-block img {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+
+.reader-body::after,
+.canvas-body::after {
+  content: "";
+  display: table;
+  clear: both;
 }
 
 /* Scrapbook Block Selection & Drag */
