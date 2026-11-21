@@ -84,33 +84,79 @@
     <!-- ═══════════ LANDING PAGE DIARY SPREAD ═══════════ -->
     <div class="landing-view" id="landing-view">
 
-      <!-- Left Side: Hi, it's Z & Strokes lyrics -->
-      <section class="diary-top-spread" id="diary-top-spread">
-        
-        <div class="diary-spread-left">
-          <div class="diary-salutation-wrap">
-            <a href="#" class="diary-salutation" id="logo-link">Hi, I’m zee</a>
-            <svg class="sage-sparkle-icon" id="masthead-sparkle" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" role="button" tabindex="0" aria-label="Author access" title="✦">
-              <path d="M8 0C8.3 4 12 7.7 16 8C12 8.3 8.3 12 8 16C7.7 12 4 8.3 0 8C4 7.7 7.7 4 8 0Z" fill="currentColor"/>
-            </svg>
-          </div>
-          <div class="diary-intro-body">
-            <p>Why not try it all<br>If you only remember it once?</p>
-          </div>
+      <!-- ═══════════ SCRAPBOOK HERO COLLAGE ═══════════ -->
+      <section class="scrapbook-hero" id="diary-top-spread" aria-label="Scrapbook collage">
+
+        <!-- Margin Line-Art: Botanical Wildflower (Left) -->
+        <div class="scrapbook-accent scrapbook-accent-left" aria-hidden="true">
+          <svg width="34" height="78" viewBox="0 0 40 88" fill="none" stroke="#677A6D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 86 C20 60, 22 36, 18 16"/>
+            <path d="M19 56 C14 50, 7 52, 9 58 C12 62, 19 60, 19 60"/>
+            <path d="M21 42 C26 36, 33 38, 31 44 C28 48, 21 46, 21 46"/>
+            <ellipse cx="18" cy="14" rx="4" ry="4"/>
+            <path d="M18 10 C18 4, 14 3, 13 8 C12 12, 18 12, 18 12"/>
+            <path d="M22 14 C28 14, 29 10, 24 9 C20 8, 20 14, 20 14"/>
+            <path d="M18 18 C18 24, 22 25, 23 20 C24 16, 18 16, 18 18"/>
+            <path d="M14 14 C8 14, 7 18, 12 19 C16 20, 16 14, 14 14"/>
+            <path d="M15 11 C11 7, 7 10, 10 13 C13 16, 16 13, 15 11"/>
+            <path d="M21 11 C25 7, 29 10, 26 13 C23 16, 20 13, 21 11"/>
+            <circle cx="18" cy="14" r="1.5" fill="#677A6D"/>
+          </svg>
         </div>
 
-        <!-- Right Side: Paperclipped "CURRENTLY" Scrap -->
-        <div class="diary-spread-right">
-          <div class="currently-scrap" id="currently-card">
-            <!-- Minimal monochrome sage SVG paperclip pinned at top -->
-            <div class="paperclip-badge" aria-hidden="true">
-              <svg width="22" height="42" viewBox="0 0 24 48" fill="none" stroke="#537E60" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M 7 14 L 7 36 C 7 41, 17 41, 17 36 L 17 8 C 17 4, 11 4, 11 8 L 11 34 C 11 37, 14 37, 14 34 L 14 13"/>
-              </svg>
+        <div class="scrapbook-collage-grid">
+          <!-- 1. Left Torn Paper Note (about zee / "hi, i’m zee") -->
+          <article class="scrapbook-card scrapbook-torn-note" id="scrapbook-torn-note">
+            <div class="washi-tape washi-tape-note" aria-hidden="true"></div>
+            <div class="torn-note-header">
+              <div class="diary-salutation-wrap">
+                <a href="#" class="diary-salutation" id="logo-link">hi, i’m zee</a>
+                <svg class="sage-sparkle-icon" id="masthead-sparkle" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" role="button" tabindex="0" aria-label="Author access" title="✦">
+                  <path d="M8 0C8.3 4 12 7.7 16 8C12 8.3 8.3 12 8 16C7.7 12 4 8.3 0 8C4 7.7 7.7 4 8 0Z" fill="currentColor"/>
+                </svg>
+              </div>
             </div>
+            <div class="torn-note-body">
+              <p class="torn-note-quote">Why not try it all,<br>if you only remember it once?</p>
+              <p class="torn-note-desc">
+                a quiet digital sketchbook for nocturnal thoughts, half-finished crafts, and sounds that stay on repeat.
+              </p>
+            </div>
+            <div class="torn-note-actions">
+              <a href="#feed-column" class="scrapbook-scroll-btn" id="hero-scroll-btn">
+                <span>read entries</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <polyline points="19 12 12 19 5 12"></polyline>
+                </svg>
+              </a>
+            </div>
+          </article>
 
+          <!-- 2. Center Polaroid Frame + Bottom Quote Strip -->
+          <div class="scrapbook-card scrapbook-polaroid-wrap" id="scrapbook-polaroid-wrap">
+            <div class="scrapbook-polaroid">
+              <div class="washi-tape washi-tape-polaroid" aria-hidden="true"></div>
+              <div class="polaroid-photo-frame">
+                <img src="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=800&q=80"
+                     alt="Sunlit green meadow and distant hills"
+                     class="polaroid-photo-img"
+                     loading="lazy">
+              </div>
+            </div>
+            <div class="polaroid-quote-strip">
+              <p class="polaroid-quote-text">“The little things? The little moments? They aren’t little.”</p>
+            </div>
+          </div>
+
+          <!-- 3. Right Lined Scrap (CURRENTLY / Checklist Note) -->
+          <article class="scrapbook-card scrapbook-lined-scrap currently-scrap" id="currently-card">
+            <div class="washi-tape washi-tape-lined" aria-hidden="true"></div>
             <div class="currently-scrap-header">
-              <span class="currently-scrap-title">CURRENTLY</span>
+              <div class="lined-header-left">
+                <span class="currently-scrap-title">CURRENTLY</span>
+                <span class="lined-sub-label">· checklist</span>
+              </div>
               <button class="edit-status-btn author-only" id="edit-status-btn" title="Edit Currently status">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 <span>Edit</span>
@@ -120,7 +166,14 @@
             <div id="currently-items" class="currently-scrap-items">
               <!-- Rendered by JS -->
             </div>
-          </div>
+          </article>
+        </div>
+
+        <!-- Margin Line-Art: Sage Sparkle Star (Right) -->
+        <div class="scrapbook-accent scrapbook-accent-right" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" stroke="#677A6D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 2 L16 30 M2 16 L30 16 M6 6 L26 26 M6 26 L26 6"/>
+          </svg>
         </div>
 
       </section>
@@ -386,8 +439,16 @@
           <input type="text" id="sm-repeat" placeholder="e.g. Where’s My Love — SYML or https://music.youtube.com/...">
         </div>
         <div>
+          <label for="sm-crafting">Crafting</label>
+          <input type="text" id="sm-crafting" placeholder="e.g. Chunky knit pouch with sage yarn">
+        </div>
+        <div>
           <label for="sm-daydreaming">Daydreaming of</label>
           <input type="text" id="sm-daydreaming" placeholder="e.g., quiet greenhouse afternoons &amp; sunlit ceramic cups">
+        </div>
+        <div>
+          <label for="sm-tally">Daily Tally</label>
+          <input type="text" id="sm-tally" placeholder="e.g. 3 cups of genmaicha · 1 completed puzzle · 4,200 steps">
         </div>
       </div>
       <div class="modal-actions">

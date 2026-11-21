@@ -744,8 +744,16 @@ window.ZLog = window.ZLog || {};
           </div>
         </div>
         <div class="currently-row">
+          <span class="currently-tag">CRAFTING</span>
+          <span class="currently-text">${escapeHtml(status.crafting || 'Chunky knit pouch with sage yarn')}</span>
+        </div>
+        <div class="currently-row">
           <span class="currently-tag">DAYDREAMING OF</span>
           <span class="currently-text">${escapeHtml((status && status.daydreaming !== undefined && status.daydreaming !== null) ? status.daydreaming : 'Quiet greenhouse afternoons & sunlit ceramic cups')}</span>
+        </div>
+        <div class="currently-row">
+          <span class="currently-tag">DAILY TALLY</span>
+          <span class="currently-text">${escapeHtml(status.dailyTally || '3 cups of genmaicha · 1 completed puzzle · 4,200 steps')}</span>
         </div>
       `;
     }
@@ -772,7 +780,9 @@ window.ZLog = window.ZLog || {};
     const status = Data.loadStatus();
     if ($('#sm-reading')) $('#sm-reading').value         = status.reading || '';
     if ($('#sm-repeat')) $('#sm-repeat').value          = status.onRepeat || '';
+    if ($('#sm-crafting')) $('#sm-crafting').value      = status.crafting || '';
     if ($('#sm-daydreaming')) $('#sm-daydreaming').value = (status && status.daydreaming !== undefined && status.daydreaming !== null) ? status.daydreaming : '';
+    if ($('#sm-tally')) $('#sm-tally').value            = status.dailyTally || '';
     dom.statusModal.classList.add('open');
   }
 
@@ -783,12 +793,16 @@ window.ZLog = window.ZLog || {};
   async function saveStatus() {
     const reading = $('#sm-reading') ? $('#sm-reading').value.trim() : '';
     const onRepeat = $('#sm-repeat') ? $('#sm-repeat').value.trim() : '';
+    const crafting = $('#sm-crafting') ? $('#sm-crafting').value.trim() : '';
     const daydreaming = $('#sm-daydreaming') ? $('#sm-daydreaming').value.trim() : '';
+    const dailyTally = $('#sm-tally') ? $('#sm-tally').value.trim() : '';
 
     const newStatus = {
       reading:      reading,
       onRepeat:     onRepeat || 'Where’s My Love — SYML',
-      daydreaming:  daydreaming
+      crafting:     crafting,
+      daydreaming:  daydreaming,
+      dailyTally:   dailyTally
     };
 
     closeStatusModal();
@@ -2529,6 +2543,18 @@ window.ZLog = window.ZLog || {};
     }
     if (dom.indexBackdrop) {
       dom.indexBackdrop.addEventListener('click', closeIndexSlideover);
+    }
+
+    // Scrapbook Hero scroll button
+    const heroScrollBtn = $('#hero-scroll-btn');
+    if (heroScrollBtn) {
+      heroScrollBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = dom.feedColumn || $('#feed-column');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
     }
 
     // Feed
