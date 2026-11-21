@@ -1919,24 +1919,42 @@ textarea {
   background: var(--border);
   border-radius: 2px;
   outline: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
 .volume-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--accent);
   cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
 }
 
 .volume-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--accent);
   cursor: pointer;
   border: none;
+  transition: transform 0.15s ease;
+}
+
+.volume-slider::-moz-range-thumb:hover {
+  transform: scale(1.25);
+}
+
+@media (max-width: 640px) {
+  .volume-slider {
+    width: 56px;
+  }
 }
 
 /* ── Reader Body Typography ── */
@@ -2102,12 +2120,33 @@ textarea {
 .mini-player-actions {
   display: flex;
   align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.mini-volume-wrap {
+  display: flex;
+  align-items: center;
   gap: 6px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.mini-volume-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex-shrink: 0;
+  display: block;
 }
 
 .mini-close-btn {
   width: 28px;
   height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  box-sizing: border-box;
   border-radius: 50%;
   background: var(--surface-soft);
   border: 1px solid var(--border);
@@ -2124,6 +2163,18 @@ textarea {
   background: var(--accent);
   color: #ffffff;
   border-color: var(--accent);
+}
+
+.mini-close-btn svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .mini-player-actions {
+    gap: 8px;
+  }
 }
 
 .mini-player-media {
@@ -2222,7 +2273,8 @@ textarea {
 
 .audio-scrubber {
   flex: 1;
-  min-width: 60px;
+  min-width: 0;
+  width: 100%;
   height: 4px;
   accent-color: var(--accent);
   cursor: pointer;

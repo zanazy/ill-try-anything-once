@@ -452,8 +452,16 @@
           </div>
         </div>
         <div class="mini-player-actions">
+          <div class="mini-volume-wrap" title="Volume">
+            <svg class="mini-volume-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <input type="range" class="volume-slider" id="mini-volume" min="0" max="100" value="80" title="Volume" aria-label="Volume">
+          </div>
           <button class="mini-close-btn" id="mini-close-btn" aria-label="Close soundtrack player" title="Close player">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
       </div>
@@ -475,7 +483,6 @@
             <span class="audio-time" id="audio-time-current">0:00</span>
             <input type="range" class="audio-scrubber" id="audio-scrubber" min="0" max="100" value="0" step="0.1" aria-label="Audio scrubber">
             <span class="audio-time" id="audio-time-total">0:00</span>
-            <input type="range" class="volume-slider" id="mini-volume" min="0" max="100" value="80" title="Volume">
           </div>
         </div>
 
