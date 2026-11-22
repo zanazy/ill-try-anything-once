@@ -314,6 +314,9 @@ window.ZLog = window.ZLog || {};
     } else {
       document.body.classList.remove('author-mode');
       if (dom.footerAuthorBtn) dom.footerAuthorBtn.textContent = 'author login';
+      if (activeFilter.toLowerCase() === 'drafts') {
+        activeFilter = 'All';
+      }
     }
     renderFilters();
     renderFeed();
@@ -407,6 +410,7 @@ window.ZLog = window.ZLog || {};
   async function handleAuthorSignOut() {
     await Data.signOutAuthor();
     currentAuthSession = null;
+    activeFilter = 'All';
     updateAuthorState(null);
     closeAuthorModal();
     showToast('Signed out. Public view active.');
@@ -470,8 +474,13 @@ window.ZLog = window.ZLog || {};
   function renderFilters() {
     const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
     const allEntries = Data.loadEntries();
-    const visibleEntries = isAuthor ? allEntries : allEntries.filter(e => e.published !== false);
-    const draftCount = allEntries.filter(e => e.published === false).length;
+    const visibleEntries = allEntries.filter(e => !Data.isDraft(e));
+    const draftCount = allEntries.filter(e => Data.isDraft(e)).length;
+
+    // Reset activeFilter if a public visitor was somehow on Drafts
+    if (!isAuthor && activeFilter.toLowerCase() === 'drafts') {
+      activeFilter = 'All';
+    }
 
     let tagsToRender = [...Data.TAGS];
     if (isAuthor) {
@@ -483,7 +492,7 @@ window.ZLog = window.ZLog || {};
       dom.journalFilterBar.innerHTML = tagsToRender.map((tag) => {
         let count = 0;
         if (tag.toLowerCase() === 'all') {
-          count = visibleEntries.length;
+          count = isAuthor ? allEntries.length : visibleEntries.length;
         } else if (tag.toLowerCase() === 'drafts') {
           count = draftCount;
         } else {
@@ -507,7 +516,7 @@ window.ZLog = window.ZLog || {};
       dom.filterBar.innerHTML = tagsToRender.map((tag) => {
         let count = 0;
         if (tag.toLowerCase() === 'all') {
-          count = visibleEntries.length;
+          count = isAuthor ? allEntries.length : visibleEntries.length;
         } else if (tag.toLowerCase() === 'drafts') {
           count = draftCount;
         } else {
@@ -576,7 +585,13 @@ window.ZLog = window.ZLog || {};
 
   function renderEntryCard(entry, mdlMap) {
     const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
-    const isDraft = entry.published === false;
+    const isDraft = Data.isDraft(entry);
+
+    // CRITICAL: Strictly hide drafts from public view!
+    if (isDraft && !isAuthor) {
+      return '';
+    }
+
     const coverHtml = entry.coverGradient
       ? `<div class="entry-cover"><div class="entry-cover-inner" style="background:${entry.coverGradient};"></div></div>`
       : '';
@@ -645,7 +660,7 @@ window.ZLog = window.ZLog || {};
       : '';
 
     return `
-      <article class="diary-paper-slip entry-card${isDraft ? ' entry-card--draft' : ''}" data-entry-id="${entry.id}">
+      <article class="diary-paper-slip entry-card${isDraft ? ' entry-card--draft' : ''}" data-entry-id="${entry.id}" data-draft="${isDraft}">
         <!-- V-notched botanical sage ribbon bookmark on top-right corner -->
         <div class="ribbon-bookmark" aria-hidden="true">
           <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
@@ -672,10 +687,11 @@ window.ZLog = window.ZLog || {};
     renderFilters();
     const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
     const allEntries = Data.loadEntries();
-    const mdlMap = Data.getMightDeleteLaterMap(allEntries);
+    const mdlMap = Data.getMightDeleteLaterMap(allEntries, isAuthor);
     const entries = Data.getFilteredEntries(activeFilter, isAuthor);
+    const finalEntries = isAuthor ? entries : entries.filter(e => !Data.isDraft(e));
 
-    if (entries.length === 0) {
+    if (finalEntries.length === 0) {
       const emptyMsg = activeFilter.toLowerCase() === 'drafts'
         ? 'No drafts right now. All caught up!'
         : 'Cool beans — nothing written here yet.';
@@ -698,7 +714,10 @@ window.ZLog = window.ZLog || {};
       return;
     }
 
-    dom.feedColumn.innerHTML = entries.map(entry => renderEntryCard(entry, mdlMap)).join('');
+    dom.feedColumn.innerHTML = finalEntries
+      .map(entry => renderEntryCard(entry, mdlMap))
+      .filter(Boolean)
+      .join('');
   }
 
   async function handleQuickPublishDraft(id) {
@@ -795,8 +814,10 @@ window.ZLog = window.ZLog || {};
       const id = card.dataset.entryId;
       const entry = Data.getEntry(id);
       const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
-      if (entry && entry.published === false && isAuthor) {
-        openEditor(entry);
+      if (entry && Data.isDraft(entry)) {
+        if (isAuthor) {
+          openEditor(entry);
+        }
         return;
       }
       openReader(id);
@@ -1320,16 +1341,17 @@ window.ZLog = window.ZLog || {};
 
   function openReader(entryId, updateHash = true) {
     const allEntries = Data.loadEntries();
-    const entry = allEntries.find(e => e.id === entryId);
+    const entry = allEntries.find(e => String(e.id) === String(entryId));
     if (!entry) return;
 
     const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
-    if (entry.published === false && !isAuthor) {
+    if (Data.isDraft(entry) && !isAuthor) {
       showToast('This entry is currently an unpublished draft.');
+      if (readerOpen) closeReader(true);
       return;
     }
 
-    const mdlMap = Data.getMightDeleteLaterMap(allEntries);
+    const mdlMap = Data.getMightDeleteLaterMap(allEntries, isAuthor);
 
     let soundtrackHtml = '';
     const playlist = (entry.playlist && entry.playlist.length > 0)
@@ -1584,6 +1606,14 @@ window.ZLog = window.ZLog || {};
     const hash = window.location.hash;
     if (hash.startsWith('#post-')) {
       const id = hash.replace('#post-', '');
+      const entry = Data.getEntry(id);
+      const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
+      if (entry && Data.isDraft(entry) && !isAuthor) {
+        showToast('This entry is currently an unpublished draft.');
+        if (readerOpen) closeReader(false);
+        history.pushState(null, '', window.location.pathname + window.location.search);
+        return;
+      }
       const currentId = dom.singleEntryView ? dom.singleEntryView.dataset.currentEntryId : null;
       if (!readerOpen || currentId !== id) {
         openReader(id, false);

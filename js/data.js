@@ -105,9 +105,22 @@ window.ZLog = window.ZLog || {};
     } catch (e) {}
   }
 
+  /* ── Robust Draft Detector ── */
+  function isDraft(entry) {
+    if (!entry) return false;
+    if (entry.published === false || entry.published === 'false' || entry.published === 0 || entry.published === '0') return true;
+    if (entry.is_draft === true || entry.is_draft === 'true' || entry.draft === true) return true;
+    if (entry.status === 'draft') return true;
+    return false;
+  }
+
   /* ── Dynamic Chronological Numbering for "might delete later" ── */
-  function getMightDeleteLaterMap(entries) {
-    const list = (entries || loadEntries()).filter(e =>
+  function getMightDeleteLaterMap(entries, isAuthor = false) {
+    let list = (entries || loadEntries());
+    if (!isAuthor) {
+      list = list.filter(e => !isDraft(e));
+    }
+    list = list.filter(e =>
       e.tags && e.tags.some(t => t.toLowerCase().trim().startsWith('might delete later'))
     );
 
@@ -153,20 +166,30 @@ window.ZLog = window.ZLog || {};
 
   function getFilteredEntries(tag, isAuthor = false) {
     let entries = loadEntries();
+
+    // PUBLIC VIEW: Strictly filter out all drafts!
     if (!isAuthor) {
-      entries = entries.filter(e => e.published !== false);
+      entries = entries.filter(e => !isDraft(e));
     }
-    if (!tag || tag === 'All' || tag === 'all') return entries;
+
+    if (!tag || tag === 'All' || tag === 'all') {
+      return isAuthor ? entries : entries.filter(e => !isDraft(e));
+    }
+
     if (tag.toLowerCase() === 'drafts') {
-      return isAuthor ? loadEntries().filter(e => e.published === false) : [];
+      return isAuthor ? loadEntries().filter(e => isDraft(e)) : [];
     }
+
     const target = tag.toLowerCase().trim();
-    return entries.filter(e => e.tags && e.tags.some(t => {
-      const cleanT = t.toLowerCase().trim();
-      if (cleanT === target) return true;
-      if (target === 'might delete later' && cleanT.startsWith('might delete later')) return true;
-      return false;
-    }));
+    return entries.filter(e => {
+      if (!isAuthor && isDraft(e)) return false;
+      return e.tags && e.tags.some(t => {
+        const cleanT = t.toLowerCase().trim();
+        if (cleanT === target) return true;
+        if (target === 'might delete later' && cleanT.startsWith('might delete later')) return true;
+        return false;
+      });
+    });
   }
 
   /* ── Status ── */
@@ -421,7 +444,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       song_note: noteText,
       body: bodyContent,
       content: bodyContent,
-      published: (row.published === false || row.published === 'false' || row.is_draft === true) ? false : true,
+      published: !isDraft(row),
       createdAt: row.created_at || row.createdAt || new Date().toISOString()
     };
   }
@@ -939,6 +962,7 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     updateEntry,
     deleteEntry,
     getEntry,
+    isDraft,
     getFilteredEntries,
     getMightDeleteLaterMap,
     loadStatus,
