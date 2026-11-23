@@ -3250,7 +3250,18 @@ window.ZLog = window.ZLog || {};
       }
 
       initSketchCanvasIfNeeded();
+      updateSketchCanvasCursor();
     }
+  }
+
+  function updateSketchCanvasCursor() {
+    if (!dom.sketchDrawingCanvas) return;
+    const r = Math.max(3, Math.min(16, sketchBrushSize + 2));
+    const size = 36;
+    const center = 18;
+    const color = encodeURIComponent(sketchInkColor || '#537E60');
+    const svg = `%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 ${size} ${size}'%3E%3Ccircle cx='${center}' cy='${center}' r='${r}' fill='none' stroke='%23ffffff' stroke-width='3' stroke-opacity='0.75'/%3E%3Ccircle cx='${center}' cy='${center}' r='${r}' fill='none' stroke='${color}' stroke-width='1.5'/%3E%3Ccircle cx='${center}' cy='${center}' r='1.5' fill='%23ffffff' stroke-opacity='0.75'/%3E%3Ccircle cx='${center}' cy='${center}' r='1' fill='${color}'/%3E%3C/svg%3E`;
+    dom.sketchDrawingCanvas.style.cursor = `url("data:image/svg+xml,${svg}") ${center} ${center}, crosshair`;
   }
 
   function initSketchCanvasIfNeeded() {
@@ -3265,6 +3276,7 @@ window.ZLog = window.ZLog || {};
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     pushSketchUndo();
+    updateSketchCanvasCursor();
 
     canvas.addEventListener('pointerdown', (e) => {
       e.preventDefault();
@@ -5047,6 +5059,7 @@ window.ZLog = window.ZLog || {};
       btn.addEventListener('click', () => {
         sketchInkColor = btn.dataset.color || '#1E2E24';
         $$('.sketch-color-btn').forEach(b => b.classList.toggle('active', b === btn));
+        updateSketchCanvasCursor();
       });
     });
 
@@ -5055,6 +5068,7 @@ window.ZLog = window.ZLog || {};
       btn.addEventListener('click', () => {
         sketchBrushSize = parseInt(btn.dataset.size, 10) || 2;
         $$('.sketch-brush-btn').forEach(b => b.classList.toggle('active', b === btn));
+        updateSketchCanvasCursor();
       });
     });
 
