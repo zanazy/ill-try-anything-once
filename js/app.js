@@ -98,6 +98,32 @@ window.ZLog = window.ZLog || {};
     dom.canvasPlaylistList = $('#canvas-playlist-list');
     dom.canvasAddSongBtn = $('#canvas-add-song-btn');
     dom.canvasBody      = $('#canvas-body');
+    dom.canvasModeSwitcher = $('#canvas-mode-switcher');
+    dom.modeJournalBtn  = $('#mode-journal-btn');
+    dom.modeSketchBtn   = $('#mode-sketch-btn');
+    dom.canvasHistoryGroup = $('#canvas-history-group');
+    dom.canvasSketchArea = $('#canvas-sketch-area');
+    dom.sketchCaption   = $('#sketch-caption');
+    dom.sketchCharCounter = $('#sketch-char-counter');
+    dom.sketchTabDraw   = $('#sketch-tab-draw');
+    dom.sketchTabUpload = $('#sketch-tab-upload');
+    dom.sketchDrawPanel = $('#sketch-draw-panel');
+    dom.sketchUploadPanel = $('#sketch-upload-panel');
+    dom.sketchDrawingCanvas = $('#sketch-drawing-canvas');
+    dom.sketchFileInput = $('#sketch-file-input');
+    dom.sketchDropzone  = $('#sketch-dropzone');
+    dom.sketchDropzonePrompt = $('#sketch-dropzone-prompt');
+    dom.sketchUploadPreview = $('#sketch-upload-preview');
+    dom.sketchUploadPreviewImg = $('#sketch-upload-preview-img');
+    dom.sketchUploadCrop = $('#sketch-upload-crop');
+    dom.sketchUploadRemove = $('#sketch-upload-remove');
+    dom.sketchPadUndo   = $('#sketch-pad-undo');
+    dom.sketchPadClear  = $('#sketch-pad-clear');
+    dom.sketchTagsPills = $('#sketch-tags-pills');
+    dom.sketchLightboxModal = $('#sketch-lightbox-modal');
+    dom.sketchLightboxImg = $('#sketch-lightbox-img');
+    dom.sketchLightboxCaption = $('#sketch-lightbox-caption');
+    dom.sketchLightboxClose = $('#sketch-lightbox-close');
     dom.canvasPreviewArea = $('#canvas-preview-area');
     dom.canvasPreviewMeta = $('#canvas-preview-meta');
     dom.canvasPreviewTitle = $('#canvas-preview-title');
@@ -583,6 +609,66 @@ window.ZLog = window.ZLog || {};
     return isNaN(d) ? dateStr : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  function renderSketchCard(entry) {
+    const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
+    const isDraft = Data.isDraft(entry);
+    if (isDraft && !isAuthor) return '';
+
+    const draftTagHtml = isDraft
+      ? `<span class="draft-badge draft-pill" style="border: 1px solid #DCE5D5;" title="Unpublished Draft">draft</span>`
+      : '';
+
+    const authorActionsHtml = isAuthor
+      ? `
+        <button type="button" class="entry-edit-pill author-only" data-entry-id="${entry.id}" title="Edit this sketch">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Edit</span>
+        </button>
+        ${isDraft ? `
+          <button type="button" class="entry-publish-pill author-only" data-entry-id="${entry.id}" title="Publish this draft sketch live immediately">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Publish</span>
+          </button>
+        ` : ''}
+        <button type="button" class="entry-delete-pill author-only" data-entry-id="${entry.id}" title="Delete this sketch">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <span>Delete</span>
+        </button>
+      `
+      : '';
+
+    const caption = entry.caption || entry.subtitle || '';
+    const imgUrl = entry.sketch_url || entry.cover_image || '';
+
+    return `
+      <article class="diary-paper-slip sketch-feed-card${isDraft ? ' entry-card--draft' : ''}" data-entry-id="${entry.id}" data-sketch="true">
+        <div class="sketch-feed-header">
+          <div class="sketch-feed-author">
+            <div class="sketch-avatar-circle" aria-hidden="true">z</div>
+            <div class="sketch-author-info">
+              <span class="sketch-author-handle">zee</span>
+              <span class="sketch-meta-dot">·</span>
+              <time class="sketch-feed-time">${formatDate(entry.date || entry.createdAt)}</time>
+            </div>
+          </div>
+          <div class="sketch-feed-actions">
+            ${draftTagHtml}
+            <span class="tag-pill tag-pill--sketch">sketch</span>
+            ${authorActionsHtml}
+          </div>
+        </div>
+
+        ${caption ? `<div class="sketch-feed-caption">${escapeHtml(caption)}</div>` : ''}
+
+        ${imgUrl ? `
+          <div class="sketch-media-frame" data-src="${escapeHtml(imgUrl)}" title="Click to view full sketch">
+            <img src="${escapeHtml(imgUrl)}" alt="Sketch by zee" class="sketch-media-photo" loading="lazy" />
+          </div>
+        ` : ''}
+      </article>
+    `;
+  }
+
   function renderEntryCard(entry, mdlMap) {
     const isAuthor = Boolean((currentAuthSession && currentAuthSession.user) || Data.isAuthorMode());
     const isDraft = Data.isDraft(entry);
@@ -590,6 +676,10 @@ window.ZLog = window.ZLog || {};
     // CRITICAL: Strictly hide drafts from public view!
     if (isDraft && !isAuthor) {
       return '';
+    }
+
+    if (entry.isSketch || entry.post_type === 'sketch') {
+      return renderSketchCard(entry);
     }
 
     const coverHtml = entry.coverGradient
@@ -750,6 +840,24 @@ window.ZLog = window.ZLog || {};
       return;
     }
 
+    // Delete entry pill click (Author only)
+    const deletePill = e.target.closest('.entry-delete-pill');
+    if (deletePill) {
+      e.stopPropagation();
+      e.preventDefault();
+      const id = deletePill.dataset.entryId;
+      const entry = Data.getEntry(id);
+      if (confirm(`Delete this ${entry && entry.isSketch ? 'sketch' : 'entry'} permanently?`)) {
+        Data.deleteLivePost(id).then(() => {
+          syncAndRenderPosts();
+          showToast('Erased from journal.');
+        }).catch(err => {
+          alert('Could not delete: ' + (err.message || 'Error'));
+        });
+      }
+      return;
+    }
+
     // Publish draft pill click (Author only)
     const publishPill = e.target.closest('.entry-publish-pill');
     if (publishPill) {
@@ -806,6 +914,20 @@ window.ZLog = window.ZLog || {};
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
+    }
+
+    // Sketch card or media frame click -> open lightbox
+    const sketchCard = e.target.closest('.sketch-feed-card');
+    if (sketchCard) {
+      if (e.target.closest('.author-only, button, a')) return;
+      const mediaEl = sketchCard.querySelector('.sketch-media-frame');
+      const src = mediaEl ? (mediaEl.dataset.src || (mediaEl.querySelector('img') ? mediaEl.querySelector('img').src : '')) : '';
+      const captionEl = sketchCard.querySelector('.sketch-feed-caption');
+      const captionText = captionEl ? captionEl.textContent : '';
+      if (src) {
+        openSketchLightbox(src, captionText);
+      }
+      return;
     }
 
     // Entry card click
@@ -3081,9 +3203,346 @@ window.ZLog = window.ZLog || {};
     }
   }
 
+  /* ═══════════════════════════════════════
+     QUICK SKETCH COMPOSER & LIGHTBOX ENGINE
+     ═══════════════════════════════════════ */
+
+  let currentEditorMode = 'journal'; // 'journal' or 'sketch'
+  let currentSketchInputTab = 'draw'; // 'draw' or 'upload'
+  let sketchInkColor = '#1E2E24';
+  let sketchBrushSize = 2;
+  let sketchIsDrawing = false;
+  let sketchUndoStack = [];
+  let sketchUploadedDataUrl = '';
+  let selectedSketchTag = 'sketches';
+  let sketchHasDrawn = false;
+
+  function switchEditorMode(mode) {
+    currentEditorMode = mode;
+    if (dom.modeJournalBtn && dom.modeSketchBtn) {
+      dom.modeJournalBtn.classList.toggle('active', mode === 'journal');
+      dom.modeJournalBtn.setAttribute('aria-selected', mode === 'journal' ? 'true' : 'false');
+      dom.modeSketchBtn.classList.toggle('active', mode === 'sketch');
+      dom.modeSketchBtn.setAttribute('aria-selected', mode === 'sketch' ? 'true' : 'false');
+    }
+
+    const publishBtnSpan = dom.canvasPublishBtn ? dom.canvasPublishBtn.querySelector('span') : null;
+
+    if (mode === 'journal') {
+      if (dom.canvasEditArea) dom.canvasEditArea.style.display = 'block';
+      if (dom.canvasSketchArea) dom.canvasSketchArea.style.display = 'none';
+      if (dom.canvasFormatBar) dom.canvasFormatBar.style.display = 'flex';
+      if (dom.canvasHistoryGroup) dom.canvasHistoryGroup.style.display = 'flex';
+      if (dom.canvasPreviewBtn) dom.canvasPreviewBtn.style.display = 'inline-block';
+      if (publishBtnSpan) {
+        publishBtnSpan.textContent = editingPostId ? 'Save Changes' : 'Publish';
+      }
+    } else {
+      // 'sketch' mode
+      if (dom.canvasEditArea) dom.canvasEditArea.style.display = 'none';
+      if (dom.canvasPreviewArea) dom.canvasPreviewArea.style.display = 'none';
+      if (dom.canvasSketchArea) dom.canvasSketchArea.style.display = 'block';
+      if (dom.canvasFormatBar) dom.canvasFormatBar.style.display = 'none';
+      if (dom.canvasHistoryGroup) dom.canvasHistoryGroup.style.display = 'none';
+      if (dom.canvasPreviewBtn) dom.canvasPreviewBtn.style.display = 'none';
+      if (publishBtnSpan) {
+        publishBtnSpan.textContent = editingPostId ? 'Save Sketch' : 'Post Sketch';
+      }
+
+      initSketchCanvasIfNeeded();
+    }
+  }
+
+  function initSketchCanvasIfNeeded() {
+    if (!dom.sketchDrawingCanvas) return;
+    const canvas = dom.sketchDrawingCanvas;
+    if (canvas._sketchInit) return;
+    canvas._sketchInit = true;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    pushSketchUndo();
+
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      sketchIsDrawing = true;
+      sketchHasDrawn = true;
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+
+      const pt = getCanvasPointerPos(canvas, e);
+      ctx.beginPath();
+      ctx.moveTo(pt.x, pt.y);
+      ctx.strokeStyle = sketchInkColor;
+      ctx.lineWidth = sketchBrushSize;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineTo(pt.x + 0.1, pt.y + 0.1);
+      ctx.stroke();
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!sketchIsDrawing) return;
+      e.preventDefault();
+      const pt = getCanvasPointerPos(canvas, e);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.stroke();
+    });
+
+    const endStroke = (e) => {
+      if (!sketchIsDrawing) return;
+      sketchIsDrawing = false;
+      try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+      pushSketchUndo();
+    };
+
+    canvas.addEventListener('pointerup', endStroke);
+    canvas.addEventListener('pointercancel', endStroke);
+  }
+
+  function getCanvasPointerPos(canvas, e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+
+  function pushSketchUndo() {
+    if (!dom.sketchDrawingCanvas) return;
+    try {
+      const dataUrl = dom.sketchDrawingCanvas.toDataURL();
+      sketchUndoStack.push(dataUrl);
+      if (sketchUndoStack.length > 25) sketchUndoStack.shift();
+    } catch (_) {}
+  }
+
+  function undoSketchStroke() {
+    if (!dom.sketchDrawingCanvas || sketchUndoStack.length <= 1) {
+      clearSketchPad();
+      return;
+    }
+    sketchUndoStack.pop();
+    const previous = sketchUndoStack[sketchUndoStack.length - 1];
+    if (previous) {
+      const img = new Image();
+      img.onload = () => {
+        const ctx = dom.sketchDrawingCanvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, dom.sketchDrawingCanvas.width, dom.sketchDrawingCanvas.height);
+          ctx.drawImage(img, 0, 0);
+        }
+      };
+      img.src = previous;
+    }
+  }
+
+  function clearSketchPad() {
+    if (!dom.sketchDrawingCanvas) return;
+    const ctx = dom.sketchDrawingCanvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, dom.sketchDrawingCanvas.width, dom.sketchDrawingCanvas.height);
+      sketchUndoStack = [];
+      sketchHasDrawn = false;
+      pushSketchUndo();
+    }
+  }
+
+  function switchSketchInputTab(tab) {
+    currentSketchInputTab = tab;
+    if (dom.sketchTabDraw && dom.sketchTabUpload) {
+      dom.sketchTabDraw.classList.toggle('active', tab === 'draw');
+      dom.sketchTabDraw.setAttribute('aria-selected', tab === 'draw' ? 'true' : 'false');
+      dom.sketchTabUpload.classList.toggle('active', tab === 'upload');
+      dom.sketchTabUpload.setAttribute('aria-selected', tab === 'upload' ? 'true' : 'false');
+    }
+    if (dom.sketchDrawPanel) dom.sketchDrawPanel.style.display = tab === 'draw' ? 'block' : 'none';
+    if (dom.sketchUploadPanel) dom.sketchUploadPanel.style.display = tab === 'upload' ? 'block' : 'none';
+  }
+
+  function updateSketchCharCounter() {
+    if (!dom.sketchCaption || !dom.sketchCharCounter) return;
+    const len = dom.sketchCaption.value.length;
+    const remaining = 280 - len;
+    dom.sketchCharCounter.textContent = remaining;
+    dom.sketchCharCounter.classList.toggle('warning', remaining <= 20);
+  }
+
+  function handleSketchSave(isDraft = false) {
+    const caption = dom.sketchCaption ? dom.sketchCaption.value.trim() : '';
+
+    let sketchImg = '';
+    if (currentSketchInputTab === 'upload') {
+      sketchImg = sketchUploadedDataUrl || '';
+    } else {
+      if (sketchHasDrawn && dom.sketchDrawingCanvas) {
+        try {
+          sketchImg = dom.sketchDrawingCanvas.toDataURL('image/webp', 0.88);
+          if (!sketchImg || !sketchImg.startsWith('data:image/webp')) {
+            sketchImg = dom.sketchDrawingCanvas.toDataURL('image/jpeg', 0.88);
+          }
+        } catch (_) {
+          sketchImg = dom.sketchDrawingCanvas.toDataURL('image/jpeg', 0.88);
+        }
+      }
+    }
+
+    if (!isDraft && !caption && !sketchImg) {
+      alert('Please add a drawing or write a quick thought for your sketch.');
+      return;
+    }
+
+    const now = new Date();
+    const monthDay = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    let title = '';
+    if (caption) {
+      title = caption.length > 36 ? caption.slice(0, 34) + '…' : caption;
+    } else {
+      title = isDraft ? `sketch (draft) — ${monthDay}` : `quick sketch — ${monthDay}`;
+    }
+
+    const sketchTag = selectedSketchTag || 'sketches';
+    const tags = [sketchTag];
+
+    const sketchPayload = {
+      caption: caption,
+      sketch_url: sketchImg,
+      post_type: 'sketch'
+    };
+
+    let rawBody = `<!--__SKETCH_POST__${JSON.stringify(sketchPayload)}-->`;
+    if (caption) {
+      rawBody += `<p>${escapeHtml(caption)}</p>`;
+    }
+    if (sketchImg) {
+      rawBody += `<figure class="scrapbook-block align-center"><img src="${sketchImg}" alt="Sketch by zee" /></figure>`;
+    }
+
+    const dateVal = now.toISOString().slice(0, 10);
+    const isEdit = Boolean(editingPostId);
+    const targetId = editingPostId;
+
+    const entry = {
+      title,
+      subtitle: caption,
+      date: dateVal,
+      tags,
+      tag: sketchTag,
+      body: rawBody,
+      content: rawBody,
+      cover_image: sketchImg,
+      coverGradient: null,
+      readingTime: 1,
+      reading_time: 1,
+      published: !isDraft,
+      isSketch: true,
+      post_type: 'sketch',
+      sketch_url: sketchImg,
+      caption: caption
+    };
+
+    const publishBtnSpan = dom.canvasPublishBtn ? dom.canvasPublishBtn.querySelector('span') : null;
+    const draftBtnSpan = dom.canvasDraftBtn ? dom.canvasDraftBtn.querySelector('span') : null;
+
+    if (isDraft) {
+      if (dom.canvasDraftBtn) dom.canvasDraftBtn.disabled = true;
+      if (draftBtnSpan) draftBtnSpan.textContent = 'Saving…';
+    } else {
+      if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = true;
+      if (publishBtnSpan) publishBtnSpan.textContent = isEdit ? 'Saving…' : 'Posting…';
+    }
+
+    const savePromise = isEdit
+      ? Data.updateLivePost(targetId, entry)
+      : Data.insertLivePost(entry);
+
+    savePromise.then((saved) => {
+      if (isDraft) {
+        if (saved && saved.id) editingPostId = saved.id;
+        syncAndRenderPosts();
+        showToast(isEdit ? 'Sketch draft updated.' : 'Saved sketch as draft.');
+      } else {
+        closeEditor();
+        syncAndRenderPosts();
+        showToast(isEdit ? 'Sketch updated in Supabase!' : 'Sketch posted live!');
+      }
+    }).catch((err) => {
+      console.error('Failed to save sketch:', err);
+      if (!err || !err._alerted) {
+        alert('Could not save sketch: ' + (err ? err.message : 'Unknown error'));
+      }
+    }).finally(() => {
+      if (dom.canvasPublishBtn) dom.canvasPublishBtn.disabled = false;
+      if (dom.canvasDraftBtn) dom.canvasDraftBtn.disabled = false;
+      if (publishBtnSpan) publishBtnSpan.textContent = isEdit ? 'Save Sketch' : 'Post Sketch';
+      if (draftBtnSpan) draftBtnSpan.textContent = 'Save as Draft';
+    });
+  }
+
+  function openSketchLightbox(imgSrc, captionText = '') {
+    if (!dom.sketchLightboxModal || !imgSrc) return;
+    if (dom.sketchLightboxImg) dom.sketchLightboxImg.src = imgSrc;
+    if (dom.sketchLightboxCaption) {
+      dom.sketchLightboxCaption.textContent = captionText || '';
+      dom.sketchLightboxCaption.style.display = captionText ? 'block' : 'none';
+    }
+    dom.sketchLightboxModal.classList.add('open');
+  }
+
+  function closeSketchLightbox() {
+    if (dom.sketchLightboxModal) {
+      dom.sketchLightboxModal.classList.remove('open');
+    }
+  }
+
   function openEditor(entryToEdit = null) {
     editingPostId = entryToEdit ? entryToEdit.id : null;
     isCanvasPreviewActive = false;
+
+    if (entryToEdit && (entryToEdit.isSketch || entryToEdit.post_type === 'sketch')) {
+      switchEditorMode('sketch');
+      if (dom.sketchCaption) {
+        dom.sketchCaption.value = entryToEdit.caption || entryToEdit.subtitle || '';
+        updateSketchCharCounter();
+      }
+      const existingTag = (entryToEdit.tags && entryToEdit.tags[0]) || entryToEdit.tag || 'sketches';
+      selectedSketchTag = existingTag;
+      if (dom.sketchTagsPills) {
+        $$('.sketch-tag-pill').forEach(p => p.classList.toggle('active', p.dataset.tag === selectedSketchTag));
+      }
+      if (entryToEdit.sketch_url) {
+        sketchUploadedDataUrl = entryToEdit.sketch_url;
+        switchSketchInputTab('upload');
+        if (dom.sketchUploadPreviewImg) dom.sketchUploadPreviewImg.src = entryToEdit.sketch_url;
+        if (dom.sketchDropzonePrompt) dom.sketchDropzonePrompt.style.display = 'none';
+        if (dom.sketchUploadPreview) dom.sketchUploadPreview.style.display = 'flex';
+      } else {
+        switchSketchInputTab('draw');
+        clearSketchPad();
+      }
+    } else {
+      switchEditorMode('journal');
+      if (dom.sketchCaption) {
+        dom.sketchCaption.value = '';
+        updateSketchCharCounter();
+      }
+      sketchUploadedDataUrl = '';
+      if (dom.sketchFileInput) dom.sketchFileInput.value = '';
+      if (dom.sketchUploadPreviewImg) dom.sketchUploadPreviewImg.src = '';
+      if (dom.sketchDropzonePrompt) dom.sketchDropzonePrompt.style.display = 'flex';
+      if (dom.sketchUploadPreview) dom.sketchUploadPreview.style.display = 'none';
+      switchSketchInputTab('draw');
+      clearSketchPad();
+      selectedSketchTag = 'sketches';
+      if (dom.sketchTagsPills) {
+        $$('.sketch-tag-pill').forEach(p => p.classList.toggle('active', p.dataset.tag === 'sketches'));
+      }
+    }
 
     if (entryToEdit) {
       // Edit mode: pre-fill fields
@@ -3185,6 +3644,9 @@ window.ZLog = window.ZLog || {};
   }
 
   function handleCanvasSave(isDraft = false) {
+    if (currentEditorMode === 'sketch') {
+      return handleSketchSave(isDraft);
+    }
     let title = dom.canvasTitle ? dom.canvasTitle.value.trim() : '';
 
     if (isDraft) {
@@ -4563,6 +5025,145 @@ window.ZLog = window.ZLog || {};
         }
       });
     }
+
+    // Mode switcher buttons
+    if (dom.modeJournalBtn) {
+      dom.modeJournalBtn.addEventListener('click', () => switchEditorMode('journal'));
+    }
+    if (dom.modeSketchBtn) {
+      dom.modeSketchBtn.addEventListener('click', () => switchEditorMode('sketch'));
+    }
+
+    // Sketch input tabs
+    if (dom.sketchTabDraw) {
+      dom.sketchTabDraw.addEventListener('click', () => switchSketchInputTab('draw'));
+    }
+    if (dom.sketchTabUpload) {
+      dom.sketchTabUpload.addEventListener('click', () => switchSketchInputTab('upload'));
+    }
+
+    // Color buttons
+    $$('.sketch-color-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sketchInkColor = btn.dataset.color || '#1E2E24';
+        $$('.sketch-color-btn').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    // Brush size buttons
+    $$('.sketch-brush-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sketchBrushSize = parseInt(btn.dataset.size, 10) || 2;
+        $$('.sketch-brush-btn').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    // Sketch Pad Undo & Clear
+    if (dom.sketchPadUndo) {
+      dom.sketchPadUndo.addEventListener('click', undoSketchStroke);
+    }
+    if (dom.sketchPadClear) {
+      dom.sketchPadClear.addEventListener('click', clearSketchPad);
+    }
+
+    // Caption char counter
+    if (dom.sketchCaption) {
+      dom.sketchCaption.addEventListener('input', updateSketchCharCounter);
+    }
+
+    // Sketch Dropzone & File Input
+    if (dom.sketchDropzone && dom.sketchFileInput) {
+      dom.sketchDropzone.addEventListener('click', (e) => {
+        if (e.target.closest('#sketch-upload-crop, #sketch-upload-remove')) return;
+        dom.sketchFileInput.click();
+      });
+
+      dom.sketchFileInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        try {
+          const compressed = await compressImageFile(file, 1000, 0.85);
+          sketchUploadedDataUrl = compressed;
+          if (dom.sketchUploadPreviewImg) dom.sketchUploadPreviewImg.src = compressed;
+          if (dom.sketchDropzonePrompt) dom.sketchDropzonePrompt.style.display = 'none';
+          if (dom.sketchUploadPreview) dom.sketchUploadPreview.style.display = 'flex';
+        } catch (err) {
+          alert(err.message || 'Could not load image');
+        }
+      });
+
+      dom.sketchDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dom.sketchDropzone.classList.add('dragover');
+      });
+      dom.sketchDropzone.addEventListener('dragleave', () => {
+        dom.sketchDropzone.classList.remove('dragover');
+      });
+      dom.sketchDropzone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        dom.sketchDropzone.classList.remove('dragover');
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+          try {
+            const compressed = await compressImageFile(file, 1000, 0.85);
+            sketchUploadedDataUrl = compressed;
+            if (dom.sketchUploadPreviewImg) dom.sketchUploadPreviewImg.src = compressed;
+            if (dom.sketchDropzonePrompt) dom.sketchDropzonePrompt.style.display = 'none';
+            if (dom.sketchUploadPreview) dom.sketchUploadPreview.style.display = 'flex';
+          } catch (err) {
+            alert(err.message || 'Could not load image');
+          }
+        }
+      });
+    }
+
+    if (dom.sketchUploadRemove) {
+      dom.sketchUploadRemove.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sketchUploadedDataUrl = '';
+        if (dom.sketchFileInput) dom.sketchFileInput.value = '';
+        if (dom.sketchUploadPreviewImg) dom.sketchUploadPreviewImg.src = '';
+        if (dom.sketchDropzonePrompt) dom.sketchDropzonePrompt.style.display = 'flex';
+        if (dom.sketchUploadPreview) dom.sketchUploadPreview.style.display = 'none';
+      });
+    }
+
+    if (dom.sketchUploadCrop) {
+      dom.sketchUploadCrop.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (sketchUploadedDataUrl) {
+          openCropModal(sketchUploadedDataUrl, (newSrc) => {
+            sketchUploadedDataUrl = newSrc;
+            if (dom.sketchUploadPreviewImg) dom.sketchUploadPreviewImg.src = newSrc;
+          });
+        }
+      });
+    }
+
+    // Sketch tag pills
+    if (dom.sketchTagsPills) {
+      dom.sketchTagsPills.addEventListener('click', (e) => {
+        const pill = e.target.closest('.sketch-tag-pill');
+        if (!pill) return;
+        selectedSketchTag = pill.dataset.tag || 'sketches';
+        $$('.sketch-tag-pill').forEach(p => p.classList.toggle('active', p === pill));
+      });
+    }
+
+    // Lightbox modal close events
+    if (dom.sketchLightboxClose) {
+      dom.sketchLightboxClose.addEventListener('click', closeSketchLightbox);
+    }
+    if (dom.sketchLightboxModal) {
+      dom.sketchLightboxModal.addEventListener('click', (e) => {
+        if (e.target === dom.sketchLightboxModal) closeSketchLightbox();
+      });
+    }
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dom.sketchLightboxModal && dom.sketchLightboxModal.classList.contains('open')) {
+        closeSketchLightbox();
+      }
+    });
   }
 
   /* ═══════════════════════════════════════

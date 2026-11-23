@@ -39,6 +39,7 @@ window.ZLog = window.ZLog || {};
     'might delete later',
     'nocturnal thoughts',
     'memories',
+    'sketches',
     'rants',
     'brain dump',
     'tiny wins',
@@ -426,6 +427,31 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     const bodyContent = row.content || row.body || '';
     const readingTime = Math.max(1, Math.round(bodyContent.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length / 230));
 
+    // Detect sketch micro-post
+    let isSketch = false;
+    let sketchUrl = row.cover_image || '';
+    let sketchCaption = row.subtitle || '';
+
+    if (row.post_type === 'sketch' || (row.tag && row.tag.toLowerCase() === 'sketches') || (bodyContent && bodyContent.includes('__SKETCH_POST__'))) {
+      isSketch = true;
+      if (bodyContent && bodyContent.includes('__SKETCH_POST__')) {
+        try {
+          const match = bodyContent.match(/<!--__SKETCH_POST__([\s\S]*?)-->/);
+          if (match && match[1]) {
+            const parsed = JSON.parse(match[1]);
+            if (parsed.sketch_url) sketchUrl = parsed.sketch_url;
+            if (parsed.caption !== undefined) sketchCaption = parsed.caption;
+          }
+        } catch (_) {}
+      }
+      if (!sketchUrl && bodyContent) {
+        const imgMatch = bodyContent.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (imgMatch && imgMatch[1]) {
+          sketchUrl = imgMatch[1];
+        }
+      }
+    }
+
     return {
       id: String(row.id),
       title: row.title || '',
@@ -445,7 +471,12 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       body: bodyContent,
       content: bodyContent,
       published: !isDraft(row),
-      createdAt: row.created_at || row.createdAt || new Date().toISOString()
+      createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+      isSketch: isSketch,
+      post_type: isSketch ? 'sketch' : (row.post_type || 'journal'),
+      sketch_url: sketchUrl,
+      caption: sketchCaption || row.subtitle || '',
+      cover_image: row.cover_image || sketchUrl
     };
   }
 
@@ -663,8 +694,8 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       song_note: songNote
     };
 
-    if (entry.cover_image) {
-      row.cover_image = entry.cover_image;
+    if (entry.cover_image || entry.sketch_url) {
+      row.cover_image = entry.cover_image || entry.sketch_url;
     }
 
     const { data, error } = await sb.from('posts').insert([row]).select();
@@ -738,8 +769,8 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
       song_note: songNote
     };
 
-    if (entry.cover_image) {
-      row.cover_image = entry.cover_image;
+    if (entry.cover_image || entry.sketch_url) {
+      row.cover_image = entry.cover_image || entry.sketch_url;
     }
 
     const { data, error } = await sb.from('posts').update(row).eq('id', id).select();
@@ -982,7 +1013,8 @@ window.ZLOG_STATUS = ${JSON.stringify(status, null, 2)};
     saveTheme,
     exportAll,
     importAll,
-    coverGradients
+    coverGradients,
+    mapPostRow
   };
 
 })(window.ZLog);

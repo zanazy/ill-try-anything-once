@@ -287,7 +287,18 @@
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
         </button>
-        <div class="canvas-history-group">
+        <!-- Post Mode Switcher (Journal Entry vs Quick Sketch) -->
+        <div class="canvas-mode-switcher" id="canvas-mode-switcher" role="tablist" aria-label="Post mode">
+          <button type="button" class="canvas-mode-pill active" id="mode-journal-btn" data-mode="journal" role="tab" aria-selected="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Journal</span>
+          </button>
+          <button type="button" class="canvas-mode-pill" id="mode-sketch-btn" data-mode="sketch" role="tab" aria-selected="false">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg>
+            <span>Quick Sketch</span>
+          </button>
+        </div>
+        <div class="canvas-history-group" id="canvas-history-group">
           <button type="button" class="canvas-btn canvas-icon-btn" id="canvas-undo-btn" title="Undo (Ctrl+Z)" aria-label="Undo">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M3 7v6h6"></path>
@@ -500,6 +511,113 @@
 
           <!-- Rich-Text Writing Canvas -->
           <div class="canvas-body" id="canvas-body" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Start writing…"></div>
+        </div>
+
+        <!-- Quick Sketch Tweet-Style Composer Area -->
+        <div class="canvas-sketch-area" id="canvas-sketch-area" style="display:none;">
+          <div class="sketch-composer-card">
+            <!-- Composer Header -->
+            <div class="sketch-composer-header">
+              <div class="sketch-composer-author">
+                <div class="sketch-avatar-circle" aria-hidden="true">z</div>
+                <div class="sketch-composer-info">
+                  <span class="sketch-composer-name">zee</span>
+                  <span class="tag-pill tag-pill--sketch">sketch</span>
+                </div>
+              </div>
+              <div class="sketch-char-counter" id="sketch-char-counter" title="Characters remaining">280</div>
+            </div>
+
+            <!-- Optional Short Caption / Thought Input -->
+            <textarea id="sketch-caption" class="sketch-caption-input" rows="2" maxlength="280" placeholder="Add an optional thought or caption… (max 280 chars)"></textarea>
+
+            <!-- Mode Selector Tabs: Draw on Canvas vs Upload Drawing -->
+            <div class="sketch-input-tabs" role="tablist" aria-label="Drawing input method">
+              <button type="button" class="sketch-tab-btn active" id="sketch-tab-draw" data-tab="draw" role="tab" aria-selected="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg>
+                <span>Draw on Canvas</span>
+              </button>
+              <button type="button" class="sketch-tab-btn" id="sketch-tab-upload" data-tab="upload" role="tab" aria-selected="false">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Upload Drawing</span>
+              </button>
+            </div>
+
+            <!-- Panel 1: Interactive Minimal Botanical Sketch Pad -->
+            <div class="sketch-draw-panel" id="sketch-draw-panel">
+              <div class="sketch-pad-toolbar">
+                <div class="sketch-color-picker" role="group" aria-label="Ink colors">
+                  <button type="button" class="sketch-color-btn active" data-color="#1E2E24" title="Deep Forest Ink" style="--c:#1E2E24;"></button>
+                  <button type="button" class="sketch-color-btn" data-color="#537E60" title="Botanical Sage Ink" style="--c:#537E60;"></button>
+                  <button type="button" class="sketch-color-btn" data-color="#B2533E" title="Terracotta Ink" style="--c:#B2533E;"></button>
+                </div>
+                <div class="sketch-brush-picker" role="group" aria-label="Brush sizes">
+                  <button type="button" class="sketch-brush-btn active" data-size="2" title="Fine Stroke (2px)">
+                    <span class="brush-dot" style="width:4px; height:4px;"></span>
+                    <span>Fine</span>
+                  </button>
+                  <button type="button" class="sketch-brush-btn" data-size="4" title="Medium Stroke (4px)">
+                    <span class="brush-dot" style="width:7px; height:7px;"></span>
+                    <span>Medium</span>
+                  </button>
+                  <button type="button" class="sketch-brush-btn" data-size="8" title="Bold Stroke (8px)">
+                    <span class="brush-dot" style="width:10px; height:10px;"></span>
+                    <span>Bold</span>
+                  </button>
+                </div>
+                <div class="sketch-pad-actions">
+                  <button type="button" class="sketch-tool-btn" id="sketch-pad-undo" title="Undo stroke">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 13"/></svg>
+                    <span>Undo</span>
+                  </button>
+                  <button type="button" class="sketch-tool-btn" id="sketch-pad-clear" title="Clear canvas">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    <span>Clear</span>
+                  </button>
+                </div>
+              </div>
+              <div class="sketch-canvas-wrapper" id="sketch-canvas-wrapper">
+                <canvas id="sketch-drawing-canvas" class="sketch-drawing-canvas" width="600" height="400"></canvas>
+              </div>
+            </div>
+
+            <!-- Panel 2: Direct Upload Panel (Zero confirm prompts) -->
+            <div class="sketch-upload-panel" id="sketch-upload-panel" style="display:none;">
+              <input type="file" id="sketch-file-input" accept="image/*" style="display:none;">
+              <div class="sketch-dropzone" id="sketch-dropzone" role="button" tabindex="0" title="Click or drop drawing image here">
+                <div class="sketch-dropzone-prompt" id="sketch-dropzone-prompt">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <p class="sketch-dropzone-text">Click to choose a drawing or drop image here</p>
+                  <span class="sketch-dropzone-sub">PNG, JPG, WebP · Auto-compressed</span>
+                </div>
+                <div class="sketch-upload-preview" id="sketch-upload-preview" style="display:none;">
+                  <img id="sketch-upload-preview-img" src="" alt="Drawing preview" class="sketch-preview-thumb">
+                  <div class="sketch-upload-preview-actions">
+                    <button type="button" class="sketch-tool-btn" id="sketch-upload-crop">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"></path><path d="M18 22V8a2 2 0 0 0-2-2H2"></path></svg>
+                      <span>Crop</span>
+                    </button>
+                    <button type="button" class="sketch-tool-btn" id="sketch-upload-remove">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      <span>Remove</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sketch Tag Bar -->
+            <div class="sketch-tag-bar">
+              <span class="sketch-tag-label">Tag:</span>
+              <div class="sketch-tags-pills" id="sketch-tags-pills">
+                <button type="button" class="sketch-tag-pill active" data-tag="sketches">sketches</button>
+                <button type="button" class="sketch-tag-pill" data-tag="doodles">doodles</button>
+                <button type="button" class="sketch-tag-pill" data-tag="memories">memories</button>
+                <button type="button" class="sketch-tag-pill" data-tag="nocturnal thoughts">nocturnal thoughts</button>
+                <button type="button" class="sketch-tag-pill" data-tag="field notes">field notes</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Live Preview Area -->
@@ -808,6 +926,24 @@
       </div>
     </div>
   </aside>
+
+  <!-- ═══════════ SKETCH LIGHTBOX MODAL ═══════════ -->
+  <div class="modal-backdrop sketch-lightbox-backdrop" id="sketch-lightbox-modal" role="dialog" aria-modal="true" aria-label="Sketch viewer">
+    <div class="sketch-lightbox-wrap">
+      <div class="sketch-lightbox-top">
+        <div class="sketch-lightbox-meta">
+          <div class="sketch-avatar-circle" aria-hidden="true">z</div>
+          <span class="sketch-lightbox-author">zee</span>
+          <span class="tag-pill tag-pill--sketch">sketch</span>
+        </div>
+        <button type="button" class="sketch-lightbox-close" id="sketch-lightbox-close" aria-label="Close viewer">×</button>
+      </div>
+      <div class="sketch-lightbox-body">
+        <img id="sketch-lightbox-img" src="" alt="Sketch by zee" class="sketch-lightbox-img">
+      </div>
+      <div class="sketch-lightbox-caption" id="sketch-lightbox-caption"></div>
+    </div>
+  </div>
 
   <!-- ═══════════ SCRIPTS ═══════════ -->
   <script src="posts.js"></script>
