@@ -516,6 +516,83 @@
 
   </div>
 
+  <!-- ═══════════ IMAGE CROP MODAL ═══════════ -->
+  <div class="modal-backdrop crop-modal-backdrop" id="crop-modal" role="dialog" aria-modal="true" aria-labelledby="crop-modal-title">
+    <div class="modal-box crop-modal-box">
+      <div class="crop-modal-header">
+        <div class="crop-modal-title-group">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
+            <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+          </svg>
+          <h3 id="crop-modal-title">Crop Photo</h3>
+        </div>
+        <button type="button" class="crop-modal-close" id="crop-modal-close" aria-label="Close crop modal">×</button>
+      </div>
+
+      <!-- Aspect Ratio Presets & Controls -->
+      <div class="crop-aspect-bar" role="group" aria-label="Aspect ratio presets">
+        <div class="crop-aspect-group">
+          <button type="button" class="crop-aspect-btn active" data-ratio="free">Free</button>
+          <button type="button" class="crop-aspect-btn" data-ratio="1:1">1:1</button>
+          <button type="button" class="crop-aspect-btn" data-ratio="4:3">4:3</button>
+          <button type="button" class="crop-aspect-btn" data-ratio="3:4">3:4</button>
+          <button type="button" class="crop-aspect-btn" data-ratio="16:9">16:9</button>
+        </div>
+        <div class="crop-tool-group">
+          <button type="button" class="crop-tool-btn" id="crop-rotate-btn" title="Rotate 90° clockwise">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            <span>Rotate</span>
+          </button>
+          <button type="button" class="crop-tool-btn" id="crop-reset-btn" title="Reset crop box">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+            </svg>
+            <span>Reset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Interactive Cropper Stage -->
+      <div class="crop-stage-container" id="crop-stage-container">
+        <div class="crop-stage" id="crop-stage">
+          <img id="crop-stage-img" alt="Cropping image" class="crop-stage-img" draggable="false">
+          <div class="crop-box" id="crop-box" tabindex="0" role="region" aria-label="Crop area">
+            <!-- 3x3 Grid Guides -->
+            <div class="crop-grid" aria-hidden="true">
+              <div class="crop-grid-line crop-grid-h1"></div>
+              <div class="crop-grid-line crop-grid-h2"></div>
+              <div class="crop-grid-line crop-grid-v1"></div>
+              <div class="crop-grid-line crop-grid-v2"></div>
+            </div>
+            <!-- Resize Handles (8 handles) -->
+            <div class="crop-handle crop-handle-nw" data-handle="nw"></div>
+            <div class="crop-handle crop-handle-n" data-handle="n"></div>
+            <div class="crop-handle crop-handle-ne" data-handle="ne"></div>
+            <div class="crop-handle crop-handle-e" data-handle="e"></div>
+            <div class="crop-handle crop-handle-se" data-handle="se"></div>
+            <div class="crop-handle crop-handle-s" data-handle="s"></div>
+            <div class="crop-handle crop-handle-sw" data-handle="sw"></div>
+            <div class="crop-handle crop-handle-w" data-handle="w"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer Actions -->
+      <div class="crop-modal-footer">
+        <span class="crop-hint">Drag box to reposition · Drag handles to resize</span>
+        <div class="crop-modal-buttons">
+          <button type="button" class="btn btn-secondary crop-cancel-btn" id="crop-cancel-btn">Cancel</button>
+          <button type="button" class="btn btn-primary crop-apply-btn" id="crop-apply-btn">Apply Crop</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════ SCRAPBOOK HERO EDIT MODAL ═══════════ -->
   <div class="modal-backdrop" id="hero-modal" role="dialog" aria-modal="true" aria-labelledby="hero-modal-title">
     <div class="modal-box hero-modal-box">
@@ -563,6 +640,10 @@
             </div>
             <div id="hm-photo-preview-wrap" class="hero-photo-preview-wrap" style="display:none;">
               <img id="hm-photo-preview" src="" alt="Preview" class="hero-photo-preview-thumb">
+              <button type="button" id="hm-photo-crop" class="hero-photo-crop-btn" title="Crop this photo">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"></path><path d="M18 22V8a2 2 0 0 0-2-2H2"></path></svg>
+                <span>Crop</span>
+              </button>
               <button type="button" id="hm-photo-reset" class="hero-photo-reset-btn" title="Reset to default image">Reset to default</button>
             </div>
           </div>
